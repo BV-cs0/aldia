@@ -2,7 +2,14 @@
 
 function Find-AldiaActualizacionesWU {
     param($Sesion, [ValidateSet('Software','Driver')]$Tipo)
-    $resultado = $Sesion.CreateUpdateSearcher().Search("IsInstalled=0 and IsHidden=0 and Type='$Tipo'")
+    $buscador = $Sesion.CreateUpdateSearcher()
+    try {
+        if (!(Test-AldiaEquipoGestionado) -and (Test-AldiaMicrosoftUpdate)) {
+            $buscador.ServiceID = $script:AldiaMicrosoftUpdateId
+            $buscador.ServerSelection = 3
+        }
+    } catch {}
+    $resultado = $buscador.Search("IsInstalled=0 and IsHidden=0 and Type='$Tipo'")
     foreach ($actualizacion in $resultado.Updates) { $actualizacion }
 }
 
@@ -55,7 +62,8 @@ function Update-AldiaWUItem {
         $detalle = $instalacion.GetUpdateResult(0)
         $estado = if ($detalle.ResultCode -eq 2) { 'actualizado' } else { 'fallo' }
         $r = New-AldiaResultado $Fuente $id $estado $detalle.ResultCode $kb -Reinicio ($instalacion.RebootRequired -or $detalle.RebootRequired) -Titulo $u.Title
-        $r | Add-Member -NotePropertyName KB -NotePropertyValue $kb -PassThru
+        $r | Add-Member -NotePropertyName KB -NotePropertyValue $kb
+        $r | Add-Member -NotePropertyName Definiciones -NotePropertyValue ($u.Categories.CategoryID -contains 'e0789628-ce08-4437-be74-2495b842f43b') -PassThru
     } catch { New-AldiaResultado $Fuente $id fallo $null $_.Exception.Message -Titulo $u.Title }
 }
 

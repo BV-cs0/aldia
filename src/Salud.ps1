@@ -212,10 +212,23 @@ function Get-AldiaComprobacionSalud {
 
 function Get-AldiaSalud {
     foreach ($id in $script:AldiaSalud.Keys) { Get-AldiaComprobacionSalud $id }
+    try { Get-AldiaSoporteWindows } catch {}
+    Get-AldiaSaludMicrosoft
 }
 
 function Invoke-AldiaAccionSalud {
     param([string]$Id)
+    if ($Id -eq 'versionWindows') {
+        $version = Get-AldiaSoporteWindows
+        if ($version.Accion) { $null = Invoke-AldiaComando $version.Datos -Visible }
+        return $version
+    }
+    if ($Id -eq 'microsoftUpdate') {
+        if (!(Test-AldiaEquipoGestionado) -and !(Test-AldiaMicrosoftUpdate)) {
+            $null = (New-AldiaServiciosWU).AddService2($script:AldiaMicrosoftUpdateId,7,'')
+        }
+        return [pscustomobject]@{ Id=$Id; Nombre='Otros programas de Microsoft'; Estado='bien'; Detalle='Actualizaciones activadas.' }
+    }
     $actual = Get-AldiaComprobacionSalud $Id
     if (!$actual.Accion) { return $actual }
     switch ($Id) {

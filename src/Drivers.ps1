@@ -1,6 +1,10 @@
-﻿# Patrón del equipo, herramienta, DisplayName, Id de winget y URL oficial.
+﻿# Los Id existentes proceden de la tabla verificada del arquitecto.
+# Winget no estuvo disponible en la ronda C: los Id nuevos quedan sin asignar.
+$script:AldiaMarcasGenericas = @('', 'System manufacturer', 'To Be Filled By O.E.M.', 'Default string', 'OEM', 'Unknown')
+# Patrón del equipo, herramienta, DisplayName, Id de winget y URL oficial.
+# Ids de winget comprobados con «winget search/show» el 22/11/2026; $null = solo enlace oficial.
 $script:AldiaFabricantes = @(
-    ,@('Dell','Dell Command Update','^Dell Command \| Update','Dell.CommandUpdate','https://www.dell.com/support/kbdoc/en-us/000177325/dell-command-update')
+    ,@('Dell|Alienware','Dell Command Update','^Dell Command \| Update','Dell.CommandUpdate','https://www.dell.com/support/kbdoc/en-us/000177325/dell-command-update')
     ,@('Lenovo','Lenovo System Update','^Lenovo System Update','Lenovo.SystemUpdate','https://support.lenovo.com/solutions/ht003029')
     ,@('\bHP\b|Hewlett','HP Support Assistant','^HP Support Assistant','HP.SupportAssistant','https://support.hp.com/help/hp-support-assistant')
     ,@('ASUS','MyASUS','^MyASUS','9N7R5S6B0ZZH','https://www.asus.com/support/myasus-deeplink/')
@@ -9,6 +13,19 @@ $script:AldiaFabricantes = @(
     ,@('NVIDIA','NVIDIA App','^NVIDIA App \d','XP8CLZL93F5Z4P','https://www.nvidia.com/software/nvidia-app/')
     ,@('AMD|Radeon','AMD Software Adrenalin','^AMD Software',$null,'https://www.amd.com/en/products/software/adrenalin.html')
     ,@('Intel','Intel Driver & Support Assistant','^Intel.*Driver (&|and) Support Assistant','Intel.IntelDriverAndSupportAssistant','https://www.intel.com/content/www/us/en/support/detect.html')
+    ,@('Acer','Acer Care Center','^Acer Care Center',$null,'https://www.acer.com/support/drivers-and-manuals')
+    ,@('Samsung','Samsung Update','^Samsung Update','9NQ3HDB99VBF','https://www.samsung.com/support/')
+    ,@('Huawei','PC Manager','^(HUAWEI )?PC Manager',$null,'https://consumer.huawei.com/en/support/pc-manager/')
+    ,@('Honor','PC Manager','^(HONOR )?PC Manager',$null,'https://www.honor.com/global/support/')
+    ,@('Dynabook|Toshiba','Dynabook Service Station','^(Dynabook|TOSHIBA) Service Station',$null,'https://support.dynabook.com/')
+    ,@('Fujitsu','DeskUpdate','^DeskUpdate','FujitsuClientComputingLimited.DeskUpdate','https://support.ts.fujitsu.com/')
+    ,@('\bLG\b','LG Update Center','^LG Update','9NS1BB1X0D4K','https://www.lg.com/support/')
+    ,@('Razer','Razer Synapse','^Razer Synapse','RazerInc.RazerInstaller.Synapse4','https://mysupport.razer.com/')
+    ,@('ASRock','ASRock Motherboard Utility / App Shop','^ASRock (Motherboard Utility|APP Shop)',$null,'https://www.asrock.com/support/')
+    ,@('Medion','Soporte de Medion',$null,$null,'https://www.medion.com/service/')
+    ,@('Xiaomi','Soporte de Xiaomi',$null,$null,'https://www.mi.com/global/support/')
+    ,@('Framework','Drivers de Framework',$null,$null,'https://frame.work/support')
+    ,@('Panasonic','Drivers de Panasonic',$null,$null,'https://pc-dl.panasonic.co.jp/itn/drivers/')
 )
 
 function Get-AldiaProblemasPnP {
@@ -39,6 +56,7 @@ function Get-AldiaGpu {
 
 function Get-AldiaGpuAntiguas {
     param($Gpu, [datetime]$Ahora = (Get-Date))
+    if (Test-AldiaMaquinaVirtual) { return }
     foreach ($g in $Gpu) {
         if ($g.Name -match 'Microsoft Basic|Virtual|Remote' -or !$g.DriverDate) { continue }
         try {
@@ -61,7 +79,24 @@ function Get-AldiaDell {
 
 function Get-AldiaRecomendaciones {
     param($Gpu = @(Get-AldiaGpu))
-    $marca = (Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).Manufacturer
+    $sistema = Get-CimInstance Win32_ComputerSystem -ErrorAction Stop
+    if (Test-AldiaMaquinaVirtual $sistema) {
+        [pscustomobject]@{ Herramienta='Máquina virtual: los drivers los da el programa de virtualización'; SoloMensaje=$true }
+        return
+    }
+    if ($sistema.Model -match '^Surface\b' -and $sistema.Manufacturer -match 'Microsoft') {
+        [pscustomobject]@{ Herramienta='En Surface, los drivers llegan por Windows Update.'; SoloMensaje=$true }
+        return
+    }
+    $marca = ([string]$sistema.Manufacturer).Trim()
+    if ($marca -in $script:AldiaMarcasGenericas) {
+        $marca = (Get-CimInstance Win32_BaseBoard -ErrorAction SilentlyContinue).Manufacturer
+    }
+    $arm = $env:PROCESSOR_ARCHITECTURE -eq 'ARM64' -or $env:PROCESSOR_ARCHITEW6432 -eq 'ARM64'
+    $procesadores = (Get-CimInstance Win32_Processor -ErrorAction SilentlyContinue).Manufacturer
+    if (!$arm -and $procesadores -contains 'AuthenticAMD') {
+        [pscustomobject]@{ Herramienta='Drivers del chipset AMD'; Equipo='procesador AMD'; Url='https://www.amd.com/en/support/download/drivers.html'; ComoConseguirla='https://www.amd.com/en/support/download/drivers.html' }
+    }
     $modelos = @($Gpu.Name) + @($Gpu.AdapterCompatibility)
     $rutas = @(
         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
@@ -71,13 +106,15 @@ function Get-AldiaRecomendaciones {
     $instaladas = @(Get-ItemProperty -Path $rutas -ErrorAction SilentlyContinue)
     foreach ($fabricante in $script:AldiaFabricantes) {
         $patron, $nombre, $displayName, $id, $url = $fabricante
+        if ($arm -and $patron -in 'AMD|Radeon','Intel','NVIDIA') { continue }
         $equipo = if ($marca -match $patron) { "equipo $marca" }
             else {
                 $modelo = $modelos -match $patron | Select-Object -First 1
                 if ($modelo) { "GPU $modelo" }
+                elseif ($patron -eq 'Intel' -and $procesadores -contains 'GenuineIntel') { 'procesador Intel' }
             }
         if (!$equipo) { continue }
-        $instalada = $instaladas | Where-Object { $_.DisplayName -match $displayName } | Select-Object -First 1
+        $instalada = $instaladas | Where-Object { $displayName -and $_.DisplayName -match $displayName } | Select-Object -First 1
         $estado = if ($instalada) { 'sí' } else { 'no' }
         $como = if ($id) { "winget install --id $id --exact" } else { $url }
         [pscustomobject]@{ Herramienta = $nombre; Instalado = $estado; Version = $instalada.DisplayVersion; ComoConseguirla = $como; Id = $id; Url = $url; Equipo = $equipo }

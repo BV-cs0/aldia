@@ -45,7 +45,7 @@ function Show-AldiaSeguridadGui {
     $g = $script:AldiaGui
     $panel = $g.Controles.Seguridad
     $panel.Children.Clear()
-    $hallazgos = @($Informe.Programas | Where-Object Nivel -gt 0)
+    $hallazgos = @($Informe.Programas | Where-Object { $_.Nivel -gt 0 -and !$_.Dudoso })
     $porId = @{}
     foreach ($p in $hallazgos) {
         foreach ($id in @($p.Id) + @($p.Ids)) { if ($id) { $porId["$($p.Fuente)|$id"] = $p } }
@@ -94,6 +94,20 @@ function Show-AldiaSeguridadGui {
         }
         New-AldiaTarjetaGui $panel $tarjeta
     }
+    $dudosos = @($Informe.Programas | Where-Object Dudoso)
+    if ($dudosos.Count) {
+        $expansor = [Windows.Controls.Expander]::new()
+        $expansor.Header = Format-AldiaCantidadGui $dudosos.Count 'programa con datos dudosos (probablemente no te afecta)' 'programas con datos dudosos (probablemente no te afectan)'
+        $lista = [Windows.Controls.StackPanel]::new()
+        foreach ($p in $dudosos) {
+            $null = $lista.Children.Add((New-AldiaBotonGui "$($p.Nombre) · $($p.Detalle)" $p {
+                param($sender,$e)
+                Show-AldiaDetallesSeguridadGui $sender.Tag
+            }))
+        }
+        $expansor.Content = $lista
+        $null = $panel.Children.Add($expansor)
+    }
     $null = $panel.Children.Add((New-AldiaTextoGui (Format-AldiaRevisionSeguridad $Informe)))
     $sinConexion = @($Informe.Programas | Where-Object Detalle -like 'No se pudo comprobar*').Count
     if ($sinConexion) { $null = $panel.Children.Add((New-AldiaTextoGui "No se pudo comprobar (sin conexión): $sinConexion programas.")) }
@@ -107,6 +121,7 @@ function Show-AldiaSeguridadGui {
 function Start-AldiaAccionSaludGui {
     param($Item, [string]$Operacion = 'accionSalud')
     $mensaje = switch ($Item.Id) {
+        microsoftUpdate { '¿Buscar también actualizaciones de otros programas de Microsoft?' }
         firewall { '¿Activar los perfiles del firewall que están desactivados?' }
         restauracion { '¿Activar los puntos de restauración en la unidad del sistema?' }
         smb1 { '¿Desactivar SMBv1? Es posible que tengas que reiniciar para terminar.' }
@@ -126,11 +141,11 @@ function Show-AldiaSaludGui {
     $estados = @($g.ResultadosSalud.Values | ForEach-Object Estado)
     $global = if ('mal' -in $estados) { 'mal' } elseif ('aviso' -in $estados) { 'aviso' }
         elseif ('desconocido' -in $estados) { 'desconocido' } else { 'bien' }
-    $g.Controles.ResumenSalud.Text = "● $bien de $($script:AldiaSalud.Count) bien"
+    $g.Controles.ResumenSalud.Text = "● $bien de $($g.ResultadosSalud.Count) bien"
     $g.Controles.ResumenSalud.Foreground = $colores[$global]
     $panel = $g.Controles.TarjetasSalud
     $panel.Children.Clear()
-    foreach ($id in $script:AldiaSalud.Keys) {
+    foreach ($id in @($script:AldiaSalud.Keys) + @('versionWindows','gestion','microsoftUpdate')) {
         $item = $g.ResultadosSalud[$id]
         if (!$item) { continue }
         $tarjeta = [Windows.Controls.StackPanel]::new()
@@ -165,6 +180,7 @@ function Invoke-AldiaSaludGui {
     param($Operacion, $Datos, [bool]$Demo)
     if ($Operacion -eq 'salud') {
         $items = if ($Demo) { Get-AldiaSaludDemo $estado.CambiosSaludDemo } else { Get-AldiaSalud }
+        $estado.SaludInforme = @($items)
         Send-AldiaEventoGui salud @($items)
         Send-AldiaEventoGui fase 'Comprobación de salud completada.'
     } else {

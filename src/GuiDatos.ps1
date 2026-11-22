@@ -27,6 +27,9 @@
             if (!$id) { $motivo = 'Windows Update no proporcionó un identificador.' }
             if ($Elemento.InstallationBehavior.CanRequestUserInput) { $motivo = 'Requiere interacción.' }
         }
+        { $_ -in 'office','store' } {
+            $detalle = (@($Elemento.Version,$Elemento.Detalle) | Where-Object { $_ }) -join ' · '
+        }
         { $_ -in 'apps','npm' } {
             if (!$nombre) { $nombre = $id }
             $antes = if ($Elemento.Version -and !$Elemento.VersionDesconocida) { $Elemento.Version } else { 'Versión desconocida' }
@@ -42,8 +45,8 @@
         ($Fuente -eq 'windows' -and (Test-AldiaWUFijada $Config $Elemento))) {
         $motivo = 'Fijado por Al Día. Puedes dejar de fijarlo en Herramientas.'
     }
-    $categorias = @{ pnp='Dispositivos sin driver'; drivers='Drivers'; windows='Actualizaciones de Windows'; apps='Programas'; npm='npm' }
-    $iconos = @{ pnp=0xE7BA; drivers=0xE950; windows=0xE777; apps=0xE71D; npm=0xE8B7 }
+    $categorias = @{ pnp='Dispositivos sin driver'; drivers='Drivers'; windows='Actualizaciones de Windows'; apps='Programas'; office='Programas'; store='Programas'; npm='npm' }
+    $iconos = @{ pnp=0xE7BA; drivers=0xE950; windows=0xE777; apps=0xE71D; office=0xE71D; store=0xE71D; npm=0xE8B7 }
     $disponible = !$motivo
     [pscustomobject]@{
         Clave=[guid]::NewGuid().ToString(); Fuente=$Fuente; Categoria=$categorias[$Fuente]
@@ -56,7 +59,7 @@
 
 function Get-AldiaTrabajosGui {
     param($Filas)
-    $orden = @{ windows=0; drivers=1; apps=2; npm=4 }
+    $orden = @{ windows=0; drivers=1; apps=2; office=2; store=2; npm=4 }
     $Filas | Where-Object { $_.Habilitada -and $_.Seleccionada -and $orden.ContainsKey($_.Fuente) } |
         Sort-Object @{Expression = { if ($_.Fuente -eq 'apps' -and $_.Id -eq 'Microsoft.AppInstaller') { 3 } else { $orden[$_.Fuente] } }} |
         Select-Object Clave,Fuente,Id,Nombre,Paquete
@@ -89,9 +92,16 @@ function Set-AldiaConfigGui {
     foreach ($fuente in 'apps','windows','drivers','npm') {
         if ($Cambios.Fuentes[$fuente] -isnot [bool]) { throw "Valor inválido para la fuente $fuente." }
     }
+    foreach ($fuente in 'office','store') {
+        if ($null -ne $Cambios.Fuentes[$fuente] -and $Cambios.Fuentes[$fuente] -isnot [bool]) { throw "Valor inválido para la fuente $fuente." }
+    }
     if ($Cambios.Activa -isnot [bool]) { throw 'Indica si la actualización automática está activada.' }
     $Config.horaDiaria = $hora
     foreach ($fuente in 'apps','windows','drivers','npm') { $Config.fuentes.$fuente = $Cambios.Fuentes[$fuente] }
+    foreach ($fuente in 'office','store') {
+        if ($null -ne $Cambios.Fuentes[$fuente]) { $Config.fuentes.$fuente = $Cambios.Fuentes[$fuente] }
+    }
+    if ($Cambios.ContainsKey('ClaveNvd')) { $Config.vulnerabilidades.nvdApiKey = ([string]$Cambios.ClaveNvd).Trim() }
     $Config
 }
 

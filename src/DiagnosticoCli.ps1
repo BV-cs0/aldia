@@ -7,12 +7,15 @@
     Write-Progress -Activity 'Vulnerabilidades' -Completed
     foreach ($aviso in $informe.Avisos) { Write-Host $aviso -ForegroundColor Yellow }
     Write-Host (Format-AldiaRevisionSeguridad $informe)
-    $hallazgos = @($informe.Programas | Where-Object Nivel -gt 0)
+    $hallazgos = @($informe.Programas | Where-Object { $_.Nivel -gt 0 -and !$_.Dudoso })
     Show-AldiaTabla 'Vulnerabilidades conocidas' $hallazgos ([ordered]@{ Nombre=40; Version=14; Riesgo=9; CVE=3; Peor=19 })
+    $dudosos = @($informe.Programas | Where-Object Dudoso).Count
+    if ($dudosos) { Write-Host (Format-AldiaCantidadGui $dudosos 'programa con datos dudosos (probablemente no te afecta)' 'programas con datos dudosos (probablemente no te afectan)') }
     foreach ($p in $hallazgos) {
         Write-Host "$($p.Nombre) · $($p.Detalle)"
         if ($p.Accion) { Write-Host "  $($p.Accion)" }
-        foreach ($c in $p.Fallos) { Write-Host "  $($c.Url)" }
+        foreach ($c in $p.Fallos | Select-Object -First 5) { Write-Host "  $($c.Url)" }
+        if ($p.Fallos.Count -gt 5) { Write-Host "  y $($p.Fallos.Count - 5) más" }
     }
 }
 

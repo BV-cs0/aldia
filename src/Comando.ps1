@@ -11,6 +11,10 @@ function Invoke-AldiaComando {
         [ValidateRange(1,2147483)][int]$Timeout = 120,
         [switch]$Simular, [switch]$Elevar, [switch]$Visible, [switch]$Oculto
     )
+    if ($Ejecutable -ieq 'winget.exe' -and !$Simular) {
+        $rutaWinget = Get-AldiaRutaWinget
+        if ($rutaWinget) { $Ejecutable = $rutaWinget }
+    }
     $linea = ($Argumentos | ForEach-Object { ConvertTo-AldiaArgumento $_ }) -join ' '
     if ($Simular) {
         Write-Host "$(ConvertTo-AldiaArgumento $Ejecutable) $linea"
@@ -62,7 +66,7 @@ function Invoke-AldiaComando {
 
 function Test-AldiaAdmin {
     $identidad = [Security.Principal.WindowsIdentity]::GetCurrent()
-    (New-Object Security.Principal.WindowsPrincipal $identidad).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    (New-Object Security.Principal.WindowsPrincipal $identidad).IsInRole([Security.Principal.SecurityIdentifier]::new('S-1-5-32-544'))
 }
 
 function Invoke-AldiaWindowsPowerShell {

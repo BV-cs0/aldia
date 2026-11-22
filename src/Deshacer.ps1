@@ -30,7 +30,8 @@ function Get-AldiaPlanDeshacer {
             $plan.Motivo = 'No se puede volver a esa versión con winget.'
             if ($id -notmatch '^[A-Za-z0-9][A-Za-z0-9._+-]*$' -or $antes -notmatch '^[A-Za-z0-9][A-Za-z0-9._+~-]*$' -or $antes -in 'Unknown','Desconocido','Desconocida') { return $plan }
             if (!$Demo) {
-                $r = Invoke-AldiaComando winget.exe @('show','--id',$id,'--exact','--versions','--disable-interactivity')
+                if ($estadoWinget -and $estadoWinget.Estado -ne 'ok') { $plan.Motivo = $estadoWinget.Mensaje; $plan.Omitido = $true; return $plan }
+                $r = Invoke-AldiaWinget @('show','--id',$id,'--exact','--versions','--disable-interactivity')
                 if ($r.Timeout -or $r.Codigo -ne 0 -or $antes -cnotin @(Get-AldiaVersionesWinget $r.Salida)) { return $plan }
             }
             $plan.Ejecutable = 'winget.exe'
@@ -47,7 +48,7 @@ function Get-AldiaPlanDeshacer {
         }
         windows {
             $plan.Motivo = 'Las actualizaciones de inteligencia de seguridad no se pueden deshacer.'
-            if ($Resultado.Titulo -match 'inteligencia de seguridad|Security Intelligence') { return $plan }
+            if ($Resultado.Definiciones -or $Resultado.KB -in 'KB2267602','KB915597' -or $Resultado.Mensaje -in 'KB2267602','KB915597') { return $plan }
             $plan.Motivo = 'La actualización no identifica un único KB para desinstalar.'
             $kb = if ($Resultado.KB) { [string]$Resultado.KB } else { [string]$Resultado.Mensaje }
             if ($kb -notmatch '^KB(\d+)$') { return $plan }
@@ -66,6 +67,7 @@ function Get-AldiaPlanDeshacer {
     $plan.Disponible = $true
     $plan.Motivo = ''
     $plan.Version = $antes
+    if (!$Demo) { $plan.AvisoSeguridad = Get-AldiaAvisoDeshacer $Resultado $antes }
     $plan
 }
 
@@ -90,7 +92,9 @@ function Invoke-AldiaDeshacer {
     if (!$Demo) {
         Assert-AldiaPermisos (Split-Path $RutaConfig)
         if (Test-Path -LiteralPath $RutaConfig) { Assert-AldiaPermisos $RutaConfig }
-        $r = Invoke-AldiaComando $Plan.Ejecutable $Plan.Argumentos -Timeout ($Config.timeoutMinutosPorPaquete * 60)
+        $limite = $Config.timeoutMinutosPorPaquete * 60
+        $r = if ($item.Fuente -eq 'apps') { Invoke-AldiaWinget $Plan.Argumentos -Timeout $limite }
+            else { Invoke-AldiaComando $Plan.Ejecutable $Plan.Argumentos -Timeout $limite }
         $winget = if ($item.Fuente -eq 'apps') { ConvertTo-AldiaEstadoWinget $r.Codigo -Timeout:$r.Timeout }
         $reinicio = $winget.RequiereReinicio -or ($item.Fuente -eq 'windows' -and $r.Codigo -in 3010,1641)
         if ($r.Timeout -or ($r.Codigo -ne 0 -and !$reinicio)) { throw "No se pudo deshacer la actualización (código $($r.Codigo)). $($r.Error)" }
@@ -106,7 +110,7 @@ function Invoke-AldiaDeshacer {
         elseif ($reinicio) { 'Actualización deshecha y elemento fijado. Reinicia el PC para terminar.' }
         else { 'Actualización deshecha y elemento fijado.' }
     $resultado = New-AldiaResultado $item.Fuente $item.Id revertido $r.Codigo $mensaje $item.Despues $Plan.Version -Reinicio $reinicio -Titulo $item.Titulo
-    $entrada = @{ Inicio=$fecha; Fin=$fecha; Modo='deshacer'; Codigo=0; RequiereReinicio=[bool]$reinicio; Resultados=@($resultado) }
+    $entrada = @{ Inicio=$fecha; Fin=$fecha; Modo='deshacer'; Completa=$false; Codigo=0; RequiereReinicio=[bool]$reinicio; Resultados=@($resultado) }
     if (!$Demo) {
         try { Add-AldiaHistorial $HistorialRuta $entrada }
         catch { throw "Se deshizo y fijó la actualización, pero no se pudo registrar en el historial. $($_.Exception.Message)" }

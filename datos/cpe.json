@@ -73,5 +73,320 @@
     "id": "WiresharkFoundation.Wireshark",
     "nombre": "^Wireshark\\b",
     "cpe": "wireshark:wireshark"
+  },
+  {
+    "id": "Mozilla.Firefox*",
+    "nombre": "^Mozilla Firefox",
+    "cpe": "mozilla:firefox"
+  },
+  {
+    "id": "Mozilla.Thunderbird*",
+    "nombre": "^Mozilla Thunderbird",
+    "cpe": "mozilla:thunderbird"
+  },
+  {
+    "id": "Microsoft.Edge",
+    "nombre": "^Microsoft Edge$",
+    "cpe": "microsoft:edge_chromium"
+  },
+  {
+    "id": "Opera.Opera*",
+    "nombre": "^Opera",
+    "cpe": "opera:opera_browser"
+  },
+  {
+    "id": "Adobe.Acrobat.Reader*",
+    "nombre": "^Adobe Acrobat",
+    "cpe": "adobe:acrobat_reader_dc"
+  },
+  {
+    "id": "7zip.7zip",
+    "nombre": "^7-Zip",
+    "cpe": "7-zip:7-zip"
+  },
+  {
+    "id": "RARLab.WinRAR",
+    "nombre": "^WinRAR",
+    "cpe": "rarlab:winrar"
+  },
+  {
+    "id": "VideoLAN.VLC",
+    "nombre": "^VLC media player",
+    "cpe": "videolan:vlc_media_player"
+  },
+  {
+    "id": "Notepad++.Notepad++",
+    "nombre": "^Notepad\\+\\+",
+    "cpe": "notepad-plus-plus:notepad\\+\\+"
+  },
+  {
+    "id": "Oracle.JavaRuntimeEnvironment",
+    "nombre": "^Java( \\d+)? Update",
+    "cpe": "oracle:jre"
+  },
+  {
+    "id": "Zoom.Zoom*",
+    "nombre": "^Zoom",
+    "cpe": "zoom:meetings"
+  },
+  {
+    "id": "Microsoft.Skype",
+    "nombre": "^Skype",
+    "cpe": "microsoft:skype"
+  },
+  {
+    "id": "Spotify.Spotify",
+    "nombre": "^Spotify",
+    "cpe": "spotify:spotify"
+  },
+  {
+    "id": "Valve.Steam",
+    "nombre": "^Steam$",
+    "cpe": "valvesoftware:steam_client"
+  },
+  {
+    "id": "PuTTY.PuTTY",
+    "nombre": "^PuTTY",
+    "cpe": "putty:putty"
+  },
+  {
+    "id": "TimKosse.FileZilla.Client",
+    "nombre": "^FileZilla",
+    "cpe": "filezilla-project:filezilla_client"
+  },
+  {
+    "id": "DominikReichl.KeePass",
+    "nombre": "^KeePass",
+    "cpe": "keepass:keepass"
+  },
+  {
+    "id": "KeePassXCTeam.KeePassXC",
+    "nombre": "^KeePassXC",
+    "cpe": "keepassxc:keepassxc"
+  },
+  {
+    "id": "GIMP.GIMP*",
+    "nombre": "^GIMP",
+    "cpe": "gimp:gimp"
+  },
+  {
+    "id": "TheDocumentFoundation.LibreOffice",
+    "nombre": "^LibreOffice",
+    "cpe": "libreoffice:libreoffice"
+  },
+  {
+    "id": "Dropbox.Dropbox",
+    "nombre": "^Dropbox",
+    "cpe": "dropbox:dropbox"
+  },
+  {
+    "id": "OpenWhisperSystems.Signal",
+    "nombre": "^Signal",
+    "cpe": "signal:signal-desktop"
+  },
+  {
+    "id": "Telegram.TelegramDesktop",
+    "nombre": "^Telegram Desktop",
+    "cpe": "telegram:telegram_desktop"
+  },
+  {
+    "id": "AnyDesk.AnyDesk",
+    "nombre": "^AnyDesk",
+    "cpe": "anydesk:anydesk"
+  },
+  {
+    "id": "WinSCP.WinSCP",
+    "nombre": "^WinSCP",
+    "cpe": "winscp:winscp"
+  },
+  {
+    "id": "IrfanSkiljan.IrfanView",
+    "nombre": "^IrfanView",
+    "cpe": "irfanview:irfanview"
+  },
+  {
+    "id": "Foxit.FoxitReader",
+    "nombre": "^Foxit (PDF )?Reader",
+    "cpe": "foxit:pdf_reader"
+  },
+  {
+    "id": "SumatraPDF.SumatraPDF",
+    "nombre": "^SumatraPDF",
+    "cpe": "sumatrapdfreader:sumatrapdf"
+  },
+  {
+    "id": "Audacity.Audacity",
+    "nombre": "^Audacity",
+    "cpe": "audacityteam:audacity"
+  },
+  {
+    "id": "Docker.DockerDesktop",
+    "nombre": "^Docker Desktop",
+    "cpe": "docker:desktop"
+  },
+  {
+    "id": "Postman.Postman",
+    "nombre": "^Postman",
+    "cpe": "postman:postman"
+  },
+  {
+    "id": "Mobatek.MobaXterm",
+    "nombre": "^MobaXterm",
+    "cpe": "mobatek:mobaxterm"
+  },
+  {
+    "id": "WireGuard.WireGuard",
+    "nombre": "^WireGuard",
+    "cpe": "wireguard:wireguard"
+  },
+  {
+    "id": "Tailscale.Tailscale",
+    "nombre": "^Tailscale",
+    "cpe": "tailscale:tailscale"
+  },
+  {
+    "id": "OpenVPNTechnologies.OpenVPN",
+    "nombre": "^OpenVPN \\d",
+    "cpe": "openvpn:openvpn"
+  },
+  {
+    "id": "Malwarebytes.Malwarebytes",
+    "nombre": "^Malwarebytes",
+    "cpe": "malwarebytes:malwarebytes"
+  },
+  {
+    "id": "Piriform.CCleaner",
+    "nombre": "^CCleaner",
+    "cpe": "piriform:ccleaner"
+  },
+  {
+    "id": "VMware.WorkstationPlayer",
+    "nombre": "^VMware (Workstation )?Player",
+    "cpe": "vmware:workstation_player"
+  },
+  {
+    "id": "PostgreSQL.PostgreSQL*",
+    "nombre": "^PostgreSQL",
+    "cpe": "postgresql:postgresql"
+  },
+  {
+    "id": "Oracle.MySQL",
+    "nombre": "^MySQL Server",
+    "cpe": "oracle:mysql"
+  },
+  {
+    "id": "JetBrains.IntelliJIDEA*",
+    "nombre": "^IntelliJ IDEA",
+    "cpe": "jetbrains:intellij_idea"
+  },
+  {
+    "id": "JetBrains.PyCharm*",
+    "nombre": "^PyCharm",
+    "cpe": "jetbrains:pycharm"
+  },
+  {
+    "id": "Greenshot.Greenshot",
+    "nombre": "^Greenshot",
+    "cpe": "getgreenshot:greenshot"
+  },
+  {
+    "id": "voidtools.Everything",
+    "nombre": "^Everything",
+    "cpe": "voidtools:everything"
+  },
+  {
+    "id": "Nvidia.GeForceExperience",
+    "nombre": "^NVIDIA GeForce Experience",
+    "cpe": "nvidia:geforce_experience"
+  },
+  {
+    "id": "RazerInc.RazerInstaller",
+    "nombre": "^Razer Synapse",
+    "cpe": "razer:synapse"
+  },
+  {
+    "id": "Apple.iTunes",
+    "nombre": "^iTunes",
+    "cpe": "apple:itunes"
+  },
+  {
+    "id": "Apple.iCloud",
+    "nombre": "^iCloud",
+    "cpe": "apple:icloud"
+  },
+  {
+    "id": "Apple.Bonjour",
+    "nombre": "^Bonjour",
+    "cpe": "apple:bonjour"
+  },
+  {
+    "id": "Google.GoogleDrive",
+    "nombre": "^Google Drive",
+    "cpe": "google:drive"
+  },
+  {
+    "id": "Microsoft.OneDrive",
+    "nombre": "^Microsoft OneDrive",
+    "cpe": "microsoft:onedrive"
+  },
+  {
+    "id": "Cisco.Webex*",
+    "nombre": "^Webex",
+    "cpe": "cisco:webex_meetings"
+  },
+  {
+    "id": "Insecure.Nmap",
+    "nombre": "^Nmap",
+    "cpe": "nmap:nmap"
+  },
+  {
+    "id": "RustDesk.RustDesk",
+    "nombre": "^RustDesk",
+    "cpe": "rustdesk:rustdesk"
+  },
+  {
+    "id": "qBittorrent.qBittorrent",
+    "nombre": "^qBittorrent",
+    "cpe": "qbittorrent:qbittorrent"
+  },
+  {
+    "id": "dotPDN.PaintDotNet",
+    "nombre": "^paint\\.net",
+    "cpe": "dotpdn:paint.net"
+  },
+  {
+    "id": "BlenderFoundation.Blender",
+    "nombre": "^Blender",
+    "cpe": "blender:blender"
+  },
+  {
+    "id": "Inkscape.Inkscape",
+    "nombre": "^Inkscape",
+    "cpe": "inkscape:inkscape"
+  },
+  {
+    "id": "calibre.calibre",
+    "nombre": "^calibre",
+    "cpe": "calibre-ebook:calibre"
+  },
+  {
+    "id": "Microsoft.PowerShell",
+    "nombre": "^PowerShell 7",
+    "cpe": "microsoft:powershell"
+  },
+  {
+    "id": "EpicGames.EpicGamesLauncher",
+    "nombre": "^Epic Games Launcher",
+    "cpe": "epicgames:launcher"
+  },
+  {
+    "id": "Microsoft.WindowsTerminal*",
+    "nombre": "^Windows Terminal",
+    "cpe": "microsoft:terminal"
+  },
+  {
+    "id": "OpenVPNTechnologies.OpenVPNConnect",
+    "nombre": "^OpenVPN Connect",
+    "cpe": "openvpn:connect"
   }
 ]

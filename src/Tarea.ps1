@@ -99,7 +99,7 @@ function Install-Aldia {
     $destino = Get-AldiaProgramFiles
     New-AldiaDirectorioProtegido $destino
     if ($Origen.TrimEnd('\') -ine $destino.TrimEnd('\')) {
-        $fuentes = @('aldia.ps1','Aldia.psd1','Aldia.psm1','config.default.json','README.md','gui\Principal.xaml','datos\cpe.json','datos\adopcion.json')
+        $fuentes = @('aldia.ps1','Aldia.psd1','Aldia.psm1','config.default.json','README.md','gui\Principal.xaml','datos\cpe.json','datos\adopcion.json','datos\windows.json','Abrir Al Día.cmd','Instalar Al Día.cmd')
         $fuentes += @(Get-ChildItem -LiteralPath (Join-Path $Origen 'src') -Filter '*.ps1' -File | ForEach-Object { Join-Path 'src' $_.Name })
         $src = Join-Path $destino 'src'
         New-AldiaDirectorioProtegido $src
@@ -109,6 +109,7 @@ function Install-Aldia {
             $objetivo = Join-Path $destino $archivo
             if (Test-Path -LiteralPath $objetivo) { Assert-AldiaPermisos $objetivo }
             Copy-Item -LiteralPath (Join-Path $Origen $archivo) -Destination $objetivo -Force -ErrorAction Stop
+            Unblock-File -LiteralPath $objetivo -ErrorAction Stop
             Set-AldiaPropietarioAdmin $objetivo
         }
     }
@@ -130,6 +131,7 @@ function Install-Aldia {
     Assert-AldiaPermisos (Join-Path $destino 'gui\Principal.xaml')
     Assert-AldiaPermisos (Join-Path $destino 'datos\cpe.json')
     Assert-AldiaPermisos (Join-Path $destino 'datos\adopcion.json')
+    Assert-AldiaPermisos (Join-Path $destino 'datos\windows.json')
     Register-AldiaTarea $destino (Get-AldiaConfig $ruta $destino)
     Set-AldiaAccesosDirectos $destino
 }

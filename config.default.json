@@ -1,5 +1,5 @@
-{
-  "fuentes": { "apps": true, "windows": true, "drivers": true, "npm": true },
+﻿{
+  "fuentes": { "apps": true, "windows": true, "drivers": true, "npm": true, "office": true, "store": true },
   "excluir": [],
   "fijados": [],
   "incluirVersionDesconocida": true,

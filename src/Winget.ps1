@@ -69,7 +69,7 @@
 
 function Get-AldiaApps {
     param($Config, [switch]$Inventario, [switch]$ListaCompleta)
-    if (!(Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue)) {
+    if (!(Get-AldiaRutaWinget)) {
         Write-AldiaLog 'winget no está disponible.'
         return
     }
@@ -77,9 +77,9 @@ function Get-AldiaApps {
     $opciones = @('upgrade','--accept-source-agreements','--disable-interactivity')
     if ($Inventario -or $ListaCompleta) { $opciones[0] = 'list' }
     elseif ($Config.incluirVersionDesconocida) { $opciones += '--include-unknown' }
-    $r = Invoke-AldiaComando winget.exe $opciones
+    $r = Invoke-AldiaWinget $opciones
     $hex = '0x{0:X8}' -f ([long]$r.Codigo -band 4294967295L)
-    if ($hex -eq '0x8A150014' -or (!$r.Timeout -and $r.Salida -match 'No installed package found matching input criteria|No se encontr.+paquete instalado')) { return }
+    if ($hex -eq '0x8A150014') { return }
     if ($r.Timeout -or $r.Codigo -ne 0) { throw "No se pudo consultar winget ($hex). $($r.Error)" }
     ConvertFrom-AldiaWinget $r.Salida -Inventario:$Inventario -ListaCompleta:$ListaCompleta
 }
@@ -142,7 +142,7 @@ function Update-AldiaAppItem {
     $argumentos += @('--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity')
     if ($p.VersionDesconocida) { $argumentos += '--include-unknown' }
     try {
-        $r = Invoke-AldiaComando winget.exe $argumentos -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
+        $r = Invoke-AldiaWinget $argumentos -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
         if ($Simular) {
             New-AldiaResultado apps $p.Id simulado $null '' $p.Version $p.Disponible -Titulo $p.Nombre
             return

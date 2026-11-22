@@ -1,0 +1,7 @@
+﻿[
+  {"producto":"Windows 10","version":"22H2","build":19045,"finHomePro":"2025-10-14","finEmpresa":"2025-10-14"},
+  {"producto":"Windows 11","version":"22H2","build":22621,"finHomePro":"2024-10-08","finEmpresa":"2025-10-14"},
+  {"producto":"Windows 11","version":"23H2","build":22631,"finHomePro":"2025-11-11","finEmpresa":"2026-11-10"},
+  {"producto":"Windows 11","version":"24H2","build":26100,"finHomePro":"2026-10-13","finEmpresa":"2027-10-12"},
+  {"producto":"Windows 11","version":"25H2","build":26200,"finHomePro":"2027-10-13","finEmpresa":"2028-10-10"}
+]

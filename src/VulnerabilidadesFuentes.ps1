@@ -15,7 +15,7 @@ function Get-AldiaInventarioSeguridad {
     $editor = Get-AldiaEditores
     $inventario = @{ Apps=@(); Npm=@(); Avisos=@() }
     try {
-        $inventario.Apps = @(foreach ($p in Get-AldiaApps $Config -ListaCompleta) {
+        $inventario.Apps = @(foreach ($p in $(if (!$estadoWinget -or $estadoWinget.Estado -eq 'ok') { Get-AldiaApps $Config -ListaCompleta })) {
             if ($p.Version -and !$p.VersionDesconocida -and $p.Id -notlike 'MSIX\Microsoft.*') {
                 [pscustomobject]@{ Id=$p.Id; Nombre=$p.Nombre; Version=$p.Version; Fuente='apps'
                     Publisher=$editor["$($p.Nombre)|$($p.Version)"]; Origen=$p.Origen }
@@ -213,9 +213,14 @@ function Get-AldiaOsv {
             $respuesta
         } -Directorio $Cache
         for ($j=0; $j -lt $lote.Count; $j++) {
-            $resultados[$lote[$j].Id] = @{
+            $programa = $lote[$j]
+            $datos = if ($resp.Disponible) { @(ConvertFrom-AldiaOsv $resp.Datos.results[$j] $Cache -SoloCache:([bool]$resp.Edad)) }
+            if ($resp.Disponible -and !$resp.Edad -and !$soloCacheInforme) {
+                $null = Get-AldiaCacheSeguridad "osv-npm|$($programa.Id)|$($programa.Version)" 24 { $datos } -Directorio $Cache
+            }
+            $resultados[$programa.Id] = @{
                 Disponible=$resp.Disponible; Edad=$resp.Edad
-                Datos=if ($resp.Disponible) { @(ConvertFrom-AldiaOsv $resp.Datos.results[$j] $Cache -SoloCache:([bool]$resp.Edad)) }
+                Datos=$datos
             }
         }
     }

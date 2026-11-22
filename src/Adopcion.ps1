@@ -39,7 +39,7 @@ function Get-AldiaAdopciones {
         $nombreLimpio = ConvertTo-AldiaNombreAdopcion $p.Nombre
         if ($nombreLimpio -notmatch '\p{L}{2}' -or $nombreLimpio -match '^[{(]?[0-9a-f]{8}-[0-9a-f-]{27}[})]?$|[\p{Cc}]') { continue }
         $resultado = Get-AldiaCacheSeguridad "adopcion-v1|$nombreLimpio" 168 {
-            $r = Invoke-AldiaComando winget.exe @('search','--name',$nombreLimpio,'--source','winget','--accept-source-agreements','--disable-interactivity')
+            $r = Invoke-AldiaWinget @('search','--name',$nombreLimpio,'--source','winget','--accept-source-agreements','--disable-interactivity')
             if ($r.Timeout) { throw 'Se agotó el tiempo de búsqueda.' }
             if (('0x{0:X8}' -f ([long]$r.Codigo -band 4294967295L)) -eq '0x8A150014') { return }
             if ($r.Codigo -ne 0) { throw 'No se pudo buscar en winget.' }
@@ -54,11 +54,11 @@ function Invoke-AldiaAdopcion {
     param($Config, [string]$Id, [switch]$Demo)
     if ($Id -notmatch '^[A-Za-z0-9][A-Za-z0-9._+-]*$') { throw 'Identificador de paquete inválido.' }
     if ($Demo) { return 'Adopción simulada.' }
-    $r = Invoke-AldiaComando winget.exe @('install','--id',$Id,'--exact','--source','winget','--silent',
+    $r = Invoke-AldiaWinget @('install','--id',$Id,'--exact','--source','winget','--silent',
         '--accept-package-agreements','--accept-source-agreements','--disable-interactivity') -Timeout ($Config.timeoutMinutosPorPaquete * 60)
     $estado = ConvertTo-AldiaEstadoWinget $r.Codigo -Timeout:$r.Timeout
     if ($estado.Estado -ne 'actualizado') { throw "No se pudo adoptar $Id ($($estado.Codigo)). $($estado.Mensaje)" }
-    $lista = Invoke-AldiaComando winget.exe @('list','--id',$Id,'--exact','--disable-interactivity')
+    $lista = Invoke-AldiaWinget @('list','--id',$Id,'--exact','--disable-interactivity')
     $asociado = !$lista.Timeout -and $lista.Codigo -eq 0 -and @(ConvertFrom-AldiaWinget $lista.Salida -ListaCompleta |
         Where-Object { $_.Id -eq $Id -and $_.Origen -eq 'winget' }).Count
     if (!$asociado) { throw 'Winget completó la instalación, pero no se pudo confirmar que vaya a actualizar el programa.' }

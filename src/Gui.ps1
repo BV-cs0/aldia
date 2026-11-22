@@ -2,11 +2,11 @@
     'Demo','Ocupado','BandaReinicio','Reiniciar','Fase','Avisos','Progreso','Titular','IconoTitular',
     'ResumenInstalacion','BandaProteccion','AvisoProteccion','EstadoProteccion','ActivarProteccion','Todas','Ninguna','Seleccionadas','Analizar','Actualizar','Filas','Historial','DetalleHistorial',
     'Fabricantes','Gpu','Inventario','Fijados','Ajustes','Automatica','Hora','FuenteWindows','FuenteDrivers','FuenteApps','FuenteNpm','Guardar',
-    'Seguridad','ResumenSalud','RevisarSalud','TarjetasSalud'
+    'Seguridad','CuentaEstandar','ResumenSalud','RevisarSalud','TarjetasSalud','BandaWinget','GuardarInforme','EnlaceNvd','ClaveNvd','FuenteOffice','FuenteStore'
 )
 $script:AldiaEstadosGui = @{
     actualizado='Actualizado ✓'; fallo='Falló ✗'; timeout='Falló ✗'; persistente='Falló ✗'
-    revertido='Revertido'; 'no-aplicable'='No disponible'; omitido='No disponible'
+    aviso='Aviso'; revertido='Revertido'; 'no-aplicable'='No disponible'; omitido='No disponible'
 }
 
 function New-AldiaVentanaGui {
@@ -19,9 +19,9 @@ function New-AldiaVentanaGui {
 
 function Start-AldiaGui {
     param([string]$Entrada, [string[]]$Opciones)
-    if (@($Opciones | Where-Object { $_ -ne '--demo' }).Count) { throw 'La opción disponible para gui es --demo.' }
+    if (@($Opciones | Where-Object { $_ -notin '--demo','--portatil' }).Count) { throw 'La opción disponible para gui es --demo.' }
     $demo = $Opciones -contains '--demo'
-    $elevar = !$demo -and !(Test-AldiaAdmin)
+    $elevar = !$demo -and '--portatil' -notin $Opciones -and !(Test-AldiaAdmin)
     if ($elevar -or [Threading.Thread]::CurrentThread.GetApartmentState() -ne 'STA') {
         $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
         $r = Invoke-AldiaComando $ps (@('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',$Entrada,'gui') + $Opciones) -Oculto -Elevar:$elevar
@@ -50,6 +50,7 @@ function Start-AldiaOperacionGui {
                 'analizar' { 'Preparando el análisis…' }
                 'seguridad' { 'Comprobando seguridad…' }
                 'salud' { 'Comprobando salud…' }
+                'informe' { 'Preparando el informe…' }
                 'accionSalud' { 'Aplicando la acción…' }
                 'proteger' { 'Activando la protección del sistema…' }
                 'guardar' { 'Guardando la configuración…' }
@@ -266,7 +267,7 @@ function Show-AldiaFilasGui {
     foreach ($fuente in 'seguridad','pnp','drivers','windows','apps','npm') {
         $grupo = if ($fuente -eq 'seguridad') {
             @($Filas | Where-Object { $_.Riesgo -and $_.Habilitada } | Sort-Object Riesgo -Descending)
-        } else { @($Filas | Where-Object { $_.Fuente -eq $fuente -and !($_.Riesgo -and $_.Habilitada) }) }
+        } else { @($Filas | Where-Object { ($_.Fuente -eq $fuente -or ($fuente -eq 'apps' -and $_.Fuente -in 'office','store')) -and !($_.Riesgo -and $_.Habilitada) }) }
         $grupo = @($grupo | Where-Object { $_ })
         if (!$grupo.Count) { continue }
         $categoria = if ($fuente -eq 'seguridad') { 'Actualizaciones de seguridad' } else { $grupo[0].Categoria }
@@ -333,7 +334,7 @@ function Show-AldiaHerramientasGui {
         }
         $textos = [Windows.Controls.StackPanel]::new()
         $null = $textos.Children.Add((New-AldiaTextoGui $r.Herramienta -Negrita))
-        $descripcion = if ($r.Instalado -eq 'sí') {
+        $descripcion = if ($r.SoloMensaje) { '' } elseif ($r.Instalado -eq 'sí') {
             if ($r.Version) { "Instalada · versión $($r.Version)" } else { 'Instalada · versión desconocida' }
         } else { "No instalada · recomendada para tu $($r.Equipo)" }
         $detalle = New-AldiaTextoGui $descripcion
@@ -357,6 +358,9 @@ function Show-AldiaHerramientasGui {
     $c.FuenteDrivers.IsChecked = $Datos.Config.fuentes.drivers
     $c.FuenteApps.IsChecked = $Datos.Config.fuentes.apps
     $c.FuenteNpm.IsChecked = $Datos.Config.fuentes.npm
+    $c.FuenteOffice.IsChecked = $Datos.Config.fuentes.office
+    $c.FuenteStore.IsChecked = $Datos.Config.fuentes.store
+    $c.ClaveNvd.Password = [string]$Datos.Config.vulnerabilidades.nvdApiKey
     $g.ConfigLista = !@($Datos.Errores | Where-Object { $_ -like 'Activa:*' }).Count
     foreach ($errorHerramienta in $Datos.Errores) { Add-AldiaAvisoGui $errorHerramienta }
 }
@@ -387,6 +391,7 @@ function Receive-AldiaEventoGui {
             $c.EstadoProteccion.Text = "$estado en la unidad del sistema ($unidad)"
         }
         'aviso' { Add-AldiaAvisoGui $d }
+        'winget' { Show-AldiaAvisoWingetGui $d }
         'filas' { $c.Seguridad.Children.Clear(); Show-AldiaFilasGui $d }
         'seguridadEnCurso' { $g.Operacion = 'seguridad'; Update-AldiaControlesGui }
         'seguridad' { Show-AldiaSeguridadGui $d }
@@ -483,12 +488,14 @@ function Connect-AldiaEventosGui {
     $c.ActivarProteccion.Add_Click({
         Start-AldiaAccionSaludGui @{ Id='restauracion' } proteger
     })
+    $c.GuardarInforme.Add_Click({ Request-AldiaInformeGui })
+    $c.EnlaceNvd.Add_Click({ Open-AldiaUrlGui 'https://nvd.nist.gov/developers/request-an-api-key' })
     $c.Guardar.Add_Click({
         $c = $script:AldiaGui.Controles
         Start-AldiaOperacionGui guardar @{
-            Hora=$c.Hora.Text; Activa=[bool]$c.Automatica.IsChecked
+            Hora=$c.Hora.Text; ClaveNvd=$c.ClaveNvd.Password; Activa=[bool]$c.Automatica.IsChecked
             Fuentes=@{ windows=[bool]$c.FuenteWindows.IsChecked; drivers=[bool]$c.FuenteDrivers.IsChecked
-                apps=[bool]$c.FuenteApps.IsChecked; npm=[bool]$c.FuenteNpm.IsChecked }
+                apps=[bool]$c.FuenteApps.IsChecked; npm=[bool]$c.FuenteNpm.IsChecked; office=[bool]$c.FuenteOffice.IsChecked; store=[bool]$c.FuenteStore.IsChecked }
         }
     })
     $c.Historial.Add_SelectionChanged({ Request-AldiaDetalleHistorialGui })
@@ -536,6 +543,7 @@ function Initialize-AldiaGui {
     }
     if ($Demo) { $controles.Demo.Visibility = 'Visible' }
     Connect-AldiaEventosGui
+    if (!$Demo -and !(Test-AldiaCuentaAdmin)) { $controles.CuentaEstandar.Visibility = 'Visible' }
     Update-AldiaControlesGui
 }
 

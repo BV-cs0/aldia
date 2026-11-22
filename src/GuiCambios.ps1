@@ -39,7 +39,28 @@ function Show-AldiaFijadosGui {
 }
 
 function Confirm-AldiaCambioGui {
-    param([string]$Mensaje)
+    param([string]$Mensaje, [string]$AvisoSeguridad)
+    if ($AvisoSeguridad) {
+        $ventana = [Windows.Window]::new()
+        $ventana.Owner = $script:AldiaGui.Ventana
+        $ventana.Title = 'Al Día'
+        $ventana.WindowStartupLocation = 'CenterOwner'
+        $ventana.SizeToContent = 'Height'
+        $ventana.Width = 450
+        $panel = [Windows.Controls.StackPanel]::new()
+        $panel.Margin = '14'
+        $aviso = New-AldiaTextoGui $AvisoSeguridad -Negrita
+        $aviso.Foreground = '#A52121'
+        $null = $panel.Children.Add($aviso)
+        $null = $panel.Children.Add((New-AldiaTextoGui $Mensaje))
+        $aceptar = New-AldiaBotonGui 'Volver a la versión anterior' $ventana { param($sender,$e) $sender.Tag.DialogResult = $true }
+        $cancelar = New-AldiaBotonGui 'Cancelar' $ventana { param($sender,$e) $sender.Tag.DialogResult = $false }
+        $cancelar.IsCancel = $true
+        $null = $panel.Children.Add($aceptar)
+        $null = $panel.Children.Add($cancelar)
+        $ventana.Content = $panel
+        return ($ventana.ShowDialog() -eq $true)
+    }
     [Windows.MessageBox]::Show($script:AldiaGui.Ventana,$Mensaje,'Al Día','YesNo','Question','No') -eq 'Yes'
 }
 
@@ -81,7 +102,7 @@ function Invoke-AldiaBotonHistorialGui {
     $g = $script:AldiaGui
     $plan = $Boton.Tag
     if ($Boton.Content -eq 'Deshacer') {
-        if ($plan.Disponible -and (Confirm-AldiaCambioGui "¿Volver a $($plan.Version) y fijar $($plan.Resultado.Id)?")) {
+        if ($plan.Disponible -and (Confirm-AldiaCambioGui "¿Volver a $($plan.Version) y fijar $($plan.Resultado.Id)?" $plan.AvisoSeguridad)) {
             Start-AldiaOperacionGui deshacer $plan.Resultado
         }
         return

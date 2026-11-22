@@ -11,7 +11,10 @@ function Get-AldiaMotivoOmision {
     param($Config, $Historial, [switch]$Forzar, [datetime]$Ahora = (Get-Date))
     if (!$Forzar) {
         foreach ($h in $Historial) {
-            if ($h.Modo -ne 'deshacer' -and $null -ne $h.Codigo -and $h.Codigo -in 0,1 -and $h.Fin) {
+            $completa = if ($h -is [System.Collections.IDictionary] -and $h.Contains('Completa')) { $h.Completa -eq $true }
+                elseif ($h.PSObject.Properties['Completa']) { $h.Completa -eq $true }
+                else { $h.Modo -in 'programado','interactivo' }
+            if ($completa -and $null -ne $h.Codigo -and $h.Codigo -in 0,1 -and $h.Fin) {
                 $fin = [datetime]$h.Fin
                 if ($fin -le $Ahora -and $fin -gt $Ahora.AddHours(-20)) {
                     return 'Hubo una ejecución completada hace menos de 20 horas.'
@@ -96,7 +99,7 @@ function Show-AldiaTabla {
 }
 
 function Invoke-AldiaActualizacion {
-    param($Config, [string[]]$Fuentes, [string]$HistorialRuta, [switch]$Simular, [switch]$Forzar)
+    param($Config, [string[]]$Fuentes, [string]$HistorialRuta, [switch]$Simular, [switch]$Forzar, [switch]$Parcial)
     $mutex = $null
     $adquirido = $false
     try {
@@ -107,18 +110,46 @@ function Invoke-AldiaActualizacion {
             if (!$adquirido) { Write-AldiaLog 'Ya hay otra ejecución en marcha.'; return 3 }
             $historial = @(Read-AldiaHistorial $HistorialRuta)
             if ($programado) {
+                if ((Get-AldiaCosteInternet) -eq 'medido') {
+                    $motivo = 'Conexión de datos limitada.'
+                    Write-AldiaLog $motivo
+                    $fecha = (Get-Date).ToString('o')
+                    Add-AldiaHistorial $HistorialRuta @{
+                        Inicio=$fecha; Fin=$fecha; Modo='programado'; Completa=$false; Codigo=3; RequiereReinicio=$false
+                        Resultados=@(New-AldiaResultado red internet omitido $null $motivo)
+                    }
+                    return 3
+                }
                 $motivo = Get-AldiaMotivoOmision $Config $historial -Forzar:$Forzar
                 if ($motivo) { Write-AldiaLog $motivo; return 3 }
             }
         }
         $inicio = (Get-Date).ToString('o')
-        New-AldiaPuntoRestauracion $Config $Fuentes -Simular:$Simular
+        $discoBajo = Test-AldiaDiscoBajo
+        if ($discoBajo) {
+            if ($programado) { Write-AldiaLog $script:AldiaDiscoBajo }
+            else { Write-Host $script:AldiaDiscoBajo -ForegroundColor Yellow }
+        }
+        $paraRestaurar = @($Fuentes | Where-Object { !($programado -and $discoBajo -and $_ -in 'windows','drivers') })
+        New-AldiaPuntoRestauracion $Config $paraRestaurar -Simular:$Simular
         $resultados = @(foreach ($fuente in $Fuentes) {
             try {
                 switch ($fuente) {
-                    'windows' { Update-AldiaWindows $Config -Simular:$Simular }
-                    'drivers' { Update-AldiaDrivers $Config -Simular:$Simular }
-                    'apps' { Update-AldiaApps $Config -Simular:$Simular }
+                    'windows' {
+                        if ($programado -and $discoBajo) { New-AldiaResultado windows disco omitido $null $script:AldiaDiscoBajo }
+                        else { Update-AldiaWindows $Config -Simular:$Simular }
+                    }
+                    'office' { Update-AldiaOffice $Config -Simular:$Simular }
+                    'store' { Update-AldiaStore -Simular:$Simular }
+                    'drivers' {
+                        if ($programado -and $discoBajo) { New-AldiaResultado drivers disco omitido $null $script:AldiaDiscoBajo }
+                        else { Update-AldiaDrivers $Config -Simular:$Simular }
+                    }
+                    'apps' {
+                        if ($null -ne $estadoWinget -and $estadoWinget.Estado -ne 'ok') {
+                            New-AldiaResultado apps winget omitido $null $estadoWinget.Mensaje
+                        } else { Update-AldiaApps $Config -Simular:$Simular }
+                    }
                     'npm' { Update-AldiaNpm $Config -Simular:$Simular }
                 }
             } catch { New-AldiaResultado $fuente consulta fallo $null $_.Exception.Message }
@@ -138,7 +169,7 @@ function Invoke-AldiaActualizacion {
         $entradaHistorial = [ordered]@{
             Inicio = $inicio; Fin = (Get-Date).ToString('o')
             Modo = if ($programado) { 'programado' } else { 'interactivo' }
-            Codigo = $codigo; Resultados = $resultados; RequiereReinicio = $reinicio
+            Completa = !$Parcial; Codigo = $codigo; Resultados = $resultados; RequiereReinicio = $reinicio
         }
         Add-AldiaHistorial $HistorialRuta $entradaHistorial
         $resumen = "$($cambios.Count) actualizadas, $($fallos.Count) fallidas"
@@ -197,13 +228,22 @@ function Invoke-AldiaActualizacion {
 
 function Show-AldiaDrivers {
     param($Config)
-    Show-AldiaTabla 'Dispositivos con incidencias' @(Get-AldiaProblemasPnP) $script:AldiaColumnasPnP
-    $sesion = New-AldiaSesionWU
-    $columnas = [ordered]@{ Title=36; DriverClass=12; DriverManufacturer=18; DriverVerDate=19; DriverModel=20; DriverHardwareID=28 }
-    Show-AldiaTabla 'Drivers de Windows Update' @(Get-AldiaDriversWU $sesion $Config) $columnas
-    $gpu = @(Get-AldiaGpu)
-    Show-AldiaTabla 'Herramientas del fabricante' @(Get-AldiaRecomendaciones $gpu) ([ordered]@{ Herramienta=33; Instalado=9; Version=10; ComoConseguirla=120 })
-    Show-AldiaTabla 'Antigüedad de drivers de GPU' @(Get-AldiaGpuAntiguas $gpu) ([ordered]@{ Nombre=40; Fecha=19; Aviso=39 })
+    try { Show-AldiaTabla 'Dispositivos con incidencias' @(Get-AldiaProblemasPnP) $script:AldiaColumnasPnP }
+    catch { Write-Host 'Windows no dejó consultar los dispositivos de este PC.' -ForegroundColor Yellow }
+    if ($internetCli -ne $false) {
+        try {
+            $sesion = New-AldiaSesionWU
+            $columnas = [ordered]@{ Title=36; DriverClass=12; DriverManufacturer=18; DriverVerDate=19; DriverModel=20; DriverHardwareID=28 }
+            Show-AldiaTabla 'Drivers de Windows Update' @(Get-AldiaDriversWU $sesion $Config) $columnas
+        } catch { Write-Host 'No se pudieron consultar los drivers de Windows Update.' -ForegroundColor Yellow }
+    }
+    $gpu = @()
+    try { $gpu = @(Get-AldiaGpu) }
+    catch { Write-Host 'Windows no dejó consultar los gráficos de este PC.' -ForegroundColor Yellow }
+    try {
+        Show-AldiaTabla 'Herramientas del fabricante' @(Get-AldiaRecomendaciones $gpu) ([ordered]@{ Herramienta=33; Instalado=9; Version=10; ComoConseguirla=120 })
+        Show-AldiaTabla 'Antigüedad de drivers de GPU' @(Get-AldiaGpuAntiguas $gpu) ([ordered]@{ Nombre=40; Fecha=19; Aviso=39 })
+    } catch { Write-Host 'Windows no dejó consultar el fabricante de este PC.' -ForegroundColor Yellow }
 }
 
 $script:AldiaColumnasPnP = [ordered]@{ Nombre=40; Clase=12; Codigo=6; Mensaje=32; HardwareID=28 }
@@ -216,7 +256,7 @@ function Invoke-AldiaRevision {
         try {
             switch ($fuente) {
                 'apps' {
-                    $items = @(Get-AldiaApps $Config)
+                    $items = @(if (!$estadoWinget -or $estadoWinget.Estado -eq 'ok') { Get-AldiaApps $Config })
                     Show-AldiaTabla apps $items ([ordered]@{ Nombre=40; Id=31; Version=12; Disponible=12; Origen=8 })
                 }
                 'windows' {
@@ -229,6 +269,12 @@ function Invoke-AldiaRevision {
                     Show-AldiaTabla drivers $items ([ordered]@{ Title=40; DriverClass=14; DriverModel=20 })
                     $pnp = @(Get-AldiaProblemasPnP)
                     Show-AldiaTabla 'Incidencias de dispositivos' $pnp $script:AldiaColumnasPnP
+                }
+                { $_ -in 'office','store' } {
+                    $items = @(if ($fuente -eq 'office') { Get-AldiaOffice } else { Get-AldiaStore })
+                    # Sin Office instalado no se muestra nada: no es algo que falte.
+                    $titulo = if ($fuente -eq 'office') { 'Office' } else { 'Microsoft Store' }
+                    if ($items.Count) { Show-AldiaTabla $titulo $items ([ordered]@{ Nombre=35; Version=16; Detalle=42 }) }
                 }
                 'npm' {
                     $items = @(Get-AldiaNpm)
@@ -256,12 +302,12 @@ function Invoke-AldiaCli {
     $pausar = $Argumentos -contains '--pausar' -and !$programado
     try {
         $orden = $Argumentos[0]
-        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui','vulnerabilidades','salud','adoptar','deshacer','fijados') {
-            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config, gui, vulnerabilidades, salud, adoptar, deshacer y fijados.'
+        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui','vulnerabilidades','salud','adoptar','deshacer','fijados','informe') {
+            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config, gui, vulnerabilidades, salud, adoptar, deshacer, fijados e informe.'
         }
         if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
         $solo = @(); $n = 10; $forzar = $false; $todo = $false; $id = $null
-        $fuentesValidas = @('windows','drivers','apps','npm')
+        $fuentesValidas = @('windows','drivers','apps','npm','office','store')
         for ($i = 1; $i -lt $Argumentos.Count; $i++) {
             $opcion = $Argumentos[$i]
             if ($opcion -eq '--pausar') { continue }
@@ -271,10 +317,9 @@ function Invoke-AldiaCli {
                 'actualizar/--forzar' { $forzar = $true }
                 'actualizar/--solo' {
                     $i++
-                    if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
-        $solo = @($Argumentos[$i] -split ',')
+                    $solo = @($Argumentos[$i] -split ',')
                     if (!$solo.Count -or @($solo | Where-Object { $_ -notin $fuentesValidas }).Count) {
-                        throw 'Indica fuentes válidas para --solo: apps,windows,drivers,npm.'
+                        throw 'Indica fuentes válidas para --solo: apps,windows,drivers,npm,office,store.'
                     }
                 }
                 { $_ -in 'adoptar/--id','deshacer/--id' } {
@@ -283,6 +328,12 @@ function Invoke-AldiaCli {
                     if ($id -notmatch '^(?:@[A-Za-z0-9._-]+/)?[A-Za-z0-9][A-Za-z0-9._+-]*$' -or
                         ($orden -eq 'adoptar' -and $id -match '[@/]')) { throw 'Indica un identificador válido.' }
                 }
+                'informe/--ruta' {
+                    $i++
+                    $rutaInforme = $Argumentos[$i]
+                    if (!$rutaInforme) { throw 'Indica dónde guardar el informe.' }
+                }
+                'instalar/--desde-lanzador' { $desdeLanzador = $true }
                 'desinstalar/--todo' { $todo = $true }
                 'historial/-n' {
                     $i++
@@ -298,9 +349,20 @@ function Invoke-AldiaCli {
         if ($orden -eq 'deshacer' -and !$id) { throw 'Indica el identificador con --id.' }
         $requiereAdmin = ($orden -in 'actualizar','instalar','desinstalar','config','deshacer' -or ($orden -eq 'adoptar' -and $id)) -and !$simular
         if ($requiereAdmin -and !(Test-AldiaAdmin)) {
+            if ($orden -eq 'instalar' -and !$desdeLanzador -and !(Test-AldiaCuentaAdmin)) {
+                Write-Host 'Abre Al Día desde una cuenta de administrador para instalarlo.' -ForegroundColor Yellow
+                return 3
+            }
             if ($programado) { throw 'La tarea debe ejecutarse con privilegios elevados.' }
             $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-            $r = Invoke-AldiaComando $ps (@('-NoProfile','-ExecutionPolicy','Bypass','-File',$Entrada) + $Argumentos + '--pausar') -Elevar -Timeout 10800
+            $argumentosElevados = @('-NoProfile','-ExecutionPolicy','Bypass','-File',$Entrada) + $Argumentos
+            if (!$desdeLanzador) { $argumentosElevados += '--pausar' }
+            try { $r = Invoke-AldiaComando $ps $argumentosElevados -Elevar -Timeout 10800 }
+            catch {
+                if (!$desdeLanzador) { throw }
+                Write-Host 'Windows no dio permiso para instalar Al Día.' -ForegroundColor Yellow
+                return 3
+            }
             if ($r.Timeout) { return 2 }
             return $r.Codigo
         }
@@ -314,19 +376,33 @@ function Invoke-AldiaCli {
         if ($orden -eq 'desinstalar') { Uninstall-Aldia -Todo:$todo; return 0 }
         if ($orden -eq 'config') {
             if (!(Test-Path -LiteralPath $rutaConfig)) { throw 'Instala Al Día antes de editar la configuración.' }
-            $null = Invoke-AldiaComando (Join-Path $env:SystemRoot 'System32
-otepad.exe') @($rutaConfig) -Visible
+            $null = Invoke-AldiaComando (Join-Path $env:SystemRoot 'System32\notepad.exe') @($rutaConfig) -Visible
             return 0
         }
         $config = Get-AldiaConfig $rutaConfig
         $fuentes = @($fuentesValidas | Where-Object { $config.fuentes.$_ -and (!$solo.Count -or $_ -in $solo) })
+        if ($orden -in 'revisar','actualizar','drivers','informe') { $internetCli = Test-AldiaInternet }
+        if ($internetCli -eq $false) {
+            if ($programado) { Write-AldiaLog $script:AldiaSinInternet }
+            else { Write-Host $script:AldiaSinInternet -ForegroundColor Yellow }
+            if ($orden -notin 'informe','drivers') { return 3 }
+        }
+        if (($orden -in 'revisar','actualizar' -and 'apps' -in $fuentes) -or $orden -in 'adoptar','inventario','deshacer') {
+            $estadoWinget = Get-AldiaEstadoWinget
+            if ($estadoWinget.Estado -ne 'ok' -and !$programado) { Write-Host $estadoWinget.Mensaje -ForegroundColor Yellow }
+        }
         switch ($orden) {
-            'actualizar' { return (Invoke-AldiaActualizacion $config $fuentes $historialRuta -Simular:$simular -Forzar:$forzar) }
+            'actualizar' { return (Invoke-AldiaActualizacion $config $fuentes $historialRuta -Simular:$simular -Forzar:$forzar -Parcial:($solo.Count -gt 0)) }
             'revisar' { return (Invoke-AldiaRevision $config $fuentes) }
             'drivers' { Show-AldiaDrivers $config }
             'vulnerabilidades' { Show-AldiaVulnerabilidadesCli $config }
             'salud' { Show-AldiaSaludCli }
+            'informe' {
+                $rutaEscrita = Save-AldiaInforme $config $rutaInforme $historialRuta
+                Write-Host "Informe guardado en $rutaEscrita"
+            }
             'adoptar' {
+                if ($estadoWinget.Estado -ne 'ok') { return 3 }
                 if ($id) {
                     Write-Host $script:AldiaAvisoAdopcion
                     if ((Read-Host '¿Continuar? [s/N]') -ne 's') { return 3 }
@@ -339,6 +415,7 @@ otepad.exe') @($rutaConfig) -Visible
                 Show-AldiaTabla 'Programas fijados' $config.fijados ([ordered]@{ fuente=8; id=38; version=16; fecha=25; motivo=24 })
             }
             'inventario' {
+                if ($estadoWinget.Estado -ne 'ok') { return 3 }
                 $items = @(Get-AldiaApps $config -Inventario)
                 Show-AldiaTabla 'Programas de instaladores clásicos' $items ([ordered]@{ Nombre=40; Version=12; Id=55 })
             }
@@ -397,7 +474,9 @@ function Invoke-AldiaCambioCli {
             Select-Object -First 1
         if (!$resultado) { throw "No hay una actualización completada para $Id." }
         $plan = Get-AldiaPlanDeshacer $resultado
+        if ($plan.Omitido) { Write-Host $plan.Motivo -ForegroundColor Yellow; return 3 }
         if (!$plan.Disponible) { throw $plan.Motivo }
+        if ($plan.AvisoSeguridad) { Write-Host $plan.AvisoSeguridad -ForegroundColor Red }
         if ((Read-Host "¿Volver a $($plan.Version) y fijar $Id? [s/N]") -ne 's') { return 3 }
         $entrada = Invoke-AldiaDeshacer $config $plan $RutaConfig $HistorialRuta
         Write-Host $entrada.Resultados[0].Mensaje

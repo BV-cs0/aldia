@@ -94,7 +94,7 @@ Describe 'Vulnerabilidades conocidas' {
             $viejo.Riesgo | Should Be 'Crítico'
             $viejo.Fallos[0].Cvss | Should Be 9.8
             $viejo.Fallos[0].Epss | Should Be 0.01971
-            $viejo.Accion | Should Match '8\.20 probablemente'
+            $viejo.Accion | Should Match 'Se actualiza con Al Día'
             ($r.Programas | Where-Object Version -eq '8.20').Nivel | Should Be 0
             $npm = $r.Programas | Where-Object Id -eq 'demo-a'
             $npm.Fallos.Count | Should Be 5
@@ -171,6 +171,8 @@ Describe 'Vulnerabilidades conocidas' {
 
         It 'en modo tarea comprueba después de actualizar y agrega los casos graves al toast' {
             Mock Get-AldiaMotivoOmision {}
+            Mock Get-AldiaCosteInternet { 'normal' }
+            Mock Test-AldiaDiscoBajo { $false }
             Mock Read-AldiaHistorial {}
             Mock Add-AldiaHistorial {}
             Mock Clear-AldiaLogs {}
@@ -194,6 +196,7 @@ Describe 'Vulnerabilidades conocidas' {
             Mock Get-AldiaProgramFiles { Join-Path (Get-PSDrive TestDrive).Root 'destino' }
             Mock New-AldiaDirectorioProtegido {}
             Mock Copy-Item {}
+            Mock Unblock-File {}
             Mock Set-AldiaPropietarioAdmin {}
             Mock Assert-AldiaPermisos {}
             Mock Get-AldiaConfig {}

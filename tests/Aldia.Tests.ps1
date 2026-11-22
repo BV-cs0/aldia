@@ -120,7 +120,7 @@ Describe 'Ejecución' {
         InModuleScope Aldia {
             Mock Get-AldiaBateria { @{ EnBateria = $false; Carga = 10 } }
             $ahora = [datetime]'2026-11-22 12:00'
-            $h = @(@{ Codigo = 0; Fin = $ahora.AddHours(-19) })
+            $h = @(@{ Modo = 'interactivo'; Codigo = 0; Fin = $ahora.AddHours(-19) })
             foreach ($codigo in 0,1) {
                 $h[0].Codigo = $codigo
                 (Get-AldiaMotivoOmision @{ bateriaMinima = 50 } $h -Ahora $ahora) | Should Match '20 horas'
@@ -187,6 +187,11 @@ Describe 'Ejecución' {
                    drivers=@{ rescanearDispositivos=$true; excluirClases=@() } }
             }
             Mock Write-Host {}
+            Mock Test-AldiaInternet { $true }
+            Mock Get-AldiaEstadoWinget { @{ Estado='ok' } }
+            Mock Test-AldiaDiscoBajo { $false }
+            Mock Update-AldiaOffice {}
+            Mock Update-AldiaStore {}
             Invoke-AldiaCli @('actualizar','--simular') | Should Be 0
             Assert-MockCalled Invoke-AldiaComando -Times 2 -Exactly -Scope It -ParameterFilter { !$Simular }
             Assert-MockCalled Invoke-AldiaComando -Times 1 -Exactly -Scope It -ParameterFilter { $Simular -and $Argumentos -contains '--id' }
@@ -221,6 +226,8 @@ Describe 'Ejecución' {
             Mock Get-AldiaConfig { @{ fuentes=@{ apps=$true } } }
             Mock Invoke-AldiaActualizacion { 1 }
             Mock Read-Host { 'Enter' }
+            Mock Test-AldiaInternet { $true }
+            Mock Get-AldiaEstadoWinget { @{ Estado='ok' } }
             Invoke-AldiaCli @('actualizar','--pausar') | Should Be 1
             Assert-MockCalled Read-Host -Times 1 -Exactly -Scope It -ParameterFilter { $Prompt -eq 'Pulsa Enter para cerrar' }
         }

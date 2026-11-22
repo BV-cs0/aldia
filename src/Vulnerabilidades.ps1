@@ -1,5 +1,5 @@
 ﻿function New-AldiaInformePrograma {
-    param($Programa, $Consulta, $Contexto, $Actualizacion, [switch]$SinCpe, [int]$EdadCpe)
+    param($Programa, $Consulta, $Contexto, $Actualizacion, [switch]$SinCpe, [int]$EdadCpe, [bool]$AlDia = $false, [bool]$Adoptable = $false, [datetime]$Ahora = (Get-Date))
     $cves = @(foreach ($grupo in $Consulta.Datos | Group-Object Id) {
         $c = $grupo.Group[0]
         if (!$c.Id) { continue }
@@ -7,15 +7,20 @@
         $epss = $Contexto.Epss[$c.Id]
         $nivel = if ($kev -or $c.Cvss -ge 9) { 4 } elseif ($c.Cvss -ge 7 -or $epss -ge 0.1) { 3 }
             elseif ($c.Cvss -ge 4) { 2 } else { 1 }
-        if ($c.Impreciso) { $nivel = 1 }
-        $anio = if ([string]$c.Published -match '^(\d{4})') { $Matches[1] }
-            elseif ($c.Id -match '^CVE-(\d{4})-') { $Matches[1] }
-        [pscustomobject]@{ Anio=$anio; Impreciso=$c.Impreciso; Id=$c.Id; Cvss=$c.Cvss; Url=$c.Url; Epss=$epss; Nivel=$nivel; Explotado=[bool]$kev
+        $anio = if ($c.Id -match '^CVE-(\d{4})-') { [int]$Matches[1] }
+        $motivoDudoso = if ($anio -and ($Ahora.Year - $anio) -gt 10) { 'dato antiguo' }
+            elseif ($AlDia -and $anio -and ($Ahora.Year - $anio) -gt 3) { 'probablemente no afecta a tu versión' }
+            elseif ($c.Impreciso) { 'dato antiguo o impreciso' }
+        $dudosoHallazgo = $motivoDudoso -in 'dato antiguo','probablemente no afecta a tu versión'
+        if ($motivoDudoso) { $nivel = 1 }
+        [pscustomobject]@{ Anio=$anio; Impreciso=[bool]$motivoDudoso; Dudoso=$dudosoHallazgo; MotivoDudoso=$motivoDudoso; Id=$c.Id; Cvss=$c.Cvss; Url=$c.Url; Epss=$epss; Nivel=$nivel; Explotado=[bool]$kev
             Ransomware=$kev.knownRansomwareCampaignUse; FechaLimite=$kev.dueDate }
     })
     $cves = @($cves | Sort-Object @{Expression='Nivel';Descending=$true},@{Expression='Explotado';Descending=$true},
         @{Expression='Cvss';Descending=$true},@{Expression='Epss';Descending=$true},Id)
-    $peor = $cves | Select-Object -First 1
+    $claros = @($cves | Where-Object { !$_.Dudoso })
+    $dudoso = $cves.Count -gt 0 -and !$claros.Count
+    $peor = if ($dudoso) { $cves | Select-Object -First 1 } else { $claros | Select-Object -First 1 }
     $cantidadCve = @($cves | Where-Object Id -like 'CVE-*').Count
     $edad = [math]::Max($EdadCpe,$Consulta.Edad)
     if ($cantidadCve) { $edad = [math]::Max($edad,$Contexto.Edad) }
@@ -32,17 +37,21 @@
     $ransomware = @($cves | Where-Object Ransomware -eq 'Known').Count -gt 0
     if ($explotado) { $detalle += ' · explotado activamente' }
     if ($ransomware) { $detalle += ' · usado en ransomware' }
-    if (@($cves | Where-Object Impreciso).Count) { $detalle += ' · dato antiguo o impreciso; puede no afectarte' }
+    foreach ($motivo in @($cves | Where-Object Impreciso | Select-Object -ExpandProperty MotivoDudoso -Unique)) {
+        $detalle += " · $motivo"
+    }
     if ($edad) { $detalle += " · resultados de hace $edad h" }
     if ($cantidadCve -and $Contexto.Incompleto) { $detalle += ' · datos de explotación incompletos' }
-    $accion = if ($peor -and $Actualizacion) { "Actualízalo: la versión $Actualizacion probablemente lo corrige." }
+    $accion = if ($peor -and $Actualizacion) { 'Se actualiza con Al Día.' }
+        elseif ($peor -and $Adoptable) { 'Adóptalo en Herramientas para que se actualice solo.' }
+        elseif ($peor -and $AlDia) { 'No hay versión más nueva. Si ya no lo usas, desinstálalo.' }
         elseif ($peor -and $Programa.Fuente -eq 'apps') { 'Actualízalo desde la web del fabricante.' }
         elseif ($peor) { 'Consulta el aviso y actualiza el paquete npm.' }
     [pscustomobject]@{
         Nombre=$Programa.Nombre; Id=$Programa.Id; Version=$Programa.Version; Fuente=$Programa.Fuente
         Nivel=[int]$peor.Nivel; Riesgo=@('—','Bajo','Medio','Alto','Crítico')[[int]$peor.Nivel]
         Ids=$Programa.Ids; Anio=$peor.Anio; Comprobado=($Consulta.Disponible -and !$SinCpe); CVE=$cantidadCve; Fallos=$cves; Peor=$peor.Id; Detalle=$detalle; Accion=$accion
-        Explotado=$explotado; Ransomware=$ransomware; Actualizacion=$Actualizacion; Edad=$edad
+        Dudoso=$dudoso; Explotado=$explotado; Ransomware=$ransomware; Actualizacion=$Actualizacion; Edad=$edad
     }
 }
 
@@ -51,8 +60,19 @@ function Get-AldiaVulnerabilidades {
         [string]$Cache = (Join-Path $env:ProgramData 'Aldia\cache'))
     $inventario = Get-AldiaInventarioSeguridad $Config
     if (!$PSBoundParameters.ContainsKey('Pendientes')) {
-        try { $Pendientes = @(Get-AldiaOrdenApps @(Get-AldiaApps $Config) $Config) }
+        try { $Pendientes = @(Get-AldiaApps $Config) }
         catch { $inventario.Avisos += 'No se pudo comprobar si winget ofrece actualizaciones.' }
+    }
+    $consultaWinget = $true
+    if ($inventario.Avisos -contains 'No se pudo comprobar si winget ofrece actualizaciones.') { $consultaWinget = $false }
+    $adoptables = @{}
+    if ($inventario.Apps) {
+        try {
+            $inventarioAdopcion = @($inventario.Apps | Where-Object { $_.Id -like 'ARP\*' })
+            foreach ($adopcion in Get-AldiaAdopciones $Config -Inventario $inventarioAdopcion -Cache $Cache) {
+                $adoptables[$adopcion.ArpId] = $true
+            }
+        } catch {}
     }
     $versiones = @{}
     foreach ($p in $Pendientes) { if ($p.Id) { $versiones[$p.Id] = $p.Disponible } }
@@ -85,7 +105,9 @@ function Get-AldiaVulnerabilidades {
                 if ($versiones[$id]) { $versiones[$id]; break }
             }
         }
-        New-AldiaInformePrograma $item.Programa $item.Consulta $contexto $version -SinCpe:$item.SinCpe -EdadCpe $item.EdadCpe
+        $alDia = $consultaWinget -and !$version -and $item.Programa.Origen -eq 'winget'
+        $adoptable = $item.Programa.Id -and $adoptables.ContainsKey($item.Programa.Id)
+        New-AldiaInformePrograma $item.Programa $item.Consulta $contexto $version -SinCpe:$item.SinCpe -EdadCpe $item.EdadCpe -AlDia:$alDia -Adoptable:$adoptable
     })
     @{ Programas=@($programas | Sort-Object @{Expression='Nivel';Descending=$true},Nombre)
         Avisos=$inventario.Avisos }
@@ -93,7 +115,7 @@ function Get-AldiaVulnerabilidades {
 
 function Get-AldiaResumenSeguridad {
     param($Informe)
-    $graves = @($Informe.Programas | Where-Object Nivel -ge 3)
+    $graves = @($Informe.Programas | Where-Object { $_.Nivel -ge 3 -and !$_.Dudoso })
     if (!$graves.Count) { return }
     $nombres = @($graves | Select-Object -First 3 | ForEach-Object {
         if ($_.Explotado) { "$($_.Nombre) (explotado activamente)" } else { $_.Nombre }
@@ -106,8 +128,12 @@ function Get-AldiaResumenSeguridad {
 
 function Format-AldiaRevisionSeguridad {
     param($Informe)
-    $hallazgos = @($Informe.Programas | Where-Object Nivel -gt 0).Count
+    $hallazgos = @($Informe.Programas | Where-Object { $_.Nivel -gt 0 -and !$_.Dudoso }).Count
     $limpios = @($Informe.Programas | Where-Object { $_.Comprobado -and !$_.Nivel }).Count
-    $sinDatos = $Informe.Programas.Count - $hallazgos - $limpios
-    "Revisados $($Informe.Programas.Count) programas: $hallazgos con fallos, $limpios sin fallos conocidos, $sinDatos sin datos."
+    $dudosos = @($Informe.Programas | Where-Object Dudoso).Count
+    $sinDatos = $Informe.Programas.Count - $hallazgos - $limpios - $dudosos
+    $total = Format-AldiaCantidadGui $Informe.Programas.Count 'programa revisado' 'programas revisados'
+    $texto = "$($total): $hallazgos con fallos, $limpios sin fallos conocidos, $sinDatos sin datos"
+    if ($dudosos) { $texto += ", $dudosos con datos dudosos" }
+    "$texto."
 }

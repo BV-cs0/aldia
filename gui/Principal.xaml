@@ -1,4 +1,4 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Al Día" Width="900" Height="620" MinWidth="760" MinHeight="520"
         WindowStartupLocation="CenterScreen" Background="#F3F6FA" Foreground="#1F3A5F"
@@ -199,7 +199,10 @@
                     </Grid>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,0,8,0">
-                            <StackPanel x:Name="Seguridad"/>
+                            <TextBlock x:Name="CuentaEstandar" Visibility="Collapsed" TextWrapping="Wrap"
+                                Text="Esta cuenta no es de administrador: Windows pedirá la contraseña de un administrador para instalar."/>
+                            <StackPanel x:Name="BandaWinget"/>
+                    <StackPanel x:Name="Seguridad"/>
                             <StackPanel x:Name="Filas"/>
                         </StackPanel>
                     </ScrollViewer>
@@ -268,6 +271,8 @@
             <TabItem Header="Herramientas">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel Margin="12,0,12,12">
+                        <Button x:Name="GuardarInforme" Content="Guardar informe" HorizontalAlignment="Left"/>
+                        <Button x:Name="EnlaceNvd" Content="Hacerlo 10 veces más rápido (clave gratuita de NVD)" HorizontalAlignment="Left"/>
                         <TextBlock Text="Herramientas de tu fabricante" Style="{StaticResource Subtitulo}"/>
                         <StackPanel x:Name="Fabricantes"/>
                         <StackPanel x:Name="Gpu"/>
@@ -297,8 +302,12 @@
                                 <CheckBox x:Name="FuenteWindows" Content="Windows" Margin="0,0,16,0"/>
                                 <CheckBox x:Name="FuenteDrivers" Content="Drivers" Margin="0,0,16,0"/>
                                 <CheckBox x:Name="FuenteApps" Content="Programas" Margin="0,0,16,0"/>
-                                <CheckBox x:Name="FuenteNpm" Content="npm"/>
+                                <CheckBox x:Name="FuenteNpm" Content="npm" Margin="0,0,16,0"/>
+                                <CheckBox x:Name="FuenteOffice" Content="Office" Margin="0,0,16,0"/>
+                                <CheckBox x:Name="FuenteStore" Content="Microsoft Store"/>
                             </WrapPanel>
+                            <Label Content="Clave gratuita de NVD" Target="{Binding ElementName=ClaveNvd}"/>
+                            <PasswordBox x:Name="ClaveNvd" MaxLength="256" HorizontalAlignment="Left" Width="270"/>
                             <Button x:Name="Guardar" Content="Guardar" HorizontalAlignment="Left" Margin="0,8,0,0"/>
                         </StackPanel>
                     </StackPanel>

@@ -41,7 +41,7 @@ Describe 'Ronda B: correcciones de seguridad y salud' {
             $r = New-AldiaInformePrograma $p @{ Datos=@($hallazgo); Disponible=$true; Edad=0 } $ctx
             $r.Riesgo | Should Be 'Bajo'
             $r.Anio | Should Be '2011'
-            $r.Detalle | Should Match 'dato antiguo o impreciso'
+            $r.Detalle | Should Match 'dato antiguo'
             $m.Remove('versionEndIncluding')
             $cve.published = (Get-Date).ToString('yyyy-MM-dd')
             (ConvertFrom-AldiaNvd $nvd 'apple:bonjour' $p.Version).Impreciso | Should Be $true
@@ -92,7 +92,7 @@ Describe 'Ronda B: correcciones de seguridad y salud' {
             Mock Write-Host {}
             Show-AldiaVulnerabilidadesCli (Get-AldiaConfig)
             Assert-MockCalled Show-AldiaTabla -Scope It -Times 1 -Exactly -ParameterFilter { @($Elementos).Count -eq 1 -and $Elementos[0].Nombre -eq 'Con fallo' }
-            Assert-MockCalled Write-Host -Scope It -ParameterFilter { $Object -eq 'Revisados 3 programas: 1 con fallos, 1 sin fallos conocidos, 1 sin datos.' }
+            Assert-MockCalled Write-Host -Scope It -ParameterFilter { $Object -eq '3 programas revisados: 1 con fallos, 1 sin fallos conocidos, 1 sin datos.' }
         }
 
         It 'agrupa conexiones duales, resume servicios internos y explica el puerto sensible' {
@@ -189,7 +189,7 @@ Describe 'Ronda B: adopción, reversión y fijados' {
             $item = New-AldiaResultado windows 'update-id' actualizado 2 'KB123456'
             $w = Get-AldiaPlanDeshacer $item
             $w.Argumentos -join ' ' | Should Be '/uninstall /kb:123456 /quiet /norestart'
-            $item.Titulo = 'Security Intelligence Update'
+            $item | Add-Member -NotePropertyName Definiciones -NotePropertyValue $true
             (Get-AldiaPlanDeshacer $item).Disponible | Should Be $false
             Mock Get-AldiaProteccionGui { 'desactivada' }
             $driver = Get-AldiaPlanDeshacer (New-AldiaResultado drivers 'drv' actualizado 2 '')
@@ -226,11 +226,13 @@ Describe 'Ronda B: integración de las órdenes y la ventana' {
             Mock Test-AldiaAdmin { $true }
             Mock Read-Host { 'n' }
             Mock Invoke-AldiaCambioCli { throw 'No debe aplicar el cambio.' }
+            Mock Get-AldiaEstadoWinget { @{ Estado='ok' } }
             Invoke-AldiaCli @('adoptar') 'prueba.ps1' | Should Be 0
             Invoke-AldiaCli @('fijados') 'prueba.ps1' | Should Be 0
             Assert-MockCalled Test-AldiaAdmin -Scope It -Times 0 -Exactly
             Assert-MockCalled Show-AldiaTabla -Scope It -Times 1 -Exactly -ParameterFilter { $Titulo -eq 'Programas que puedes adoptar' }
             Assert-MockCalled Show-AldiaTabla -Scope It -Times 1 -Exactly -ParameterFilter { $Titulo -eq 'Programas fijados' }
+            Mock Get-AldiaEstadoWinget { @{ Estado='ok' } }
             Invoke-AldiaCli @('adoptar','--id','OpenJS.NodeJS.24') 'prueba.ps1' | Should Be 3
             Assert-MockCalled Invoke-AldiaCambioCli -Scope It -Times 0 -Exactly
         }
@@ -277,7 +279,7 @@ Describe 'Ronda B: integración de las órdenes y la ventana' {
                 )
                 $c.Inventario.Children[0].Child.Children[0].Content | Should Be 'Adoptar'
                 $app = New-AldiaResultado apps 'Ejemplo.App' actualizado 0 '' '1.0' '2.0'
-                $win = New-AldiaResultado windows 'update-id' actualizado 2 'KB123456' -Titulo 'Security Intelligence'
+                $win = New-AldiaResultado windows 'update-id' actualizado 2 'KB2267602' -Titulo 'Security Intelligence'
                 Show-AldiaDetalleHistorialGui @((Get-AldiaPlanDeshacer $app -Demo),(Get-AldiaPlanDeshacer $win -Demo))
                 $c.DetalleHistorial.Items[0].Disponible | Should Be $true
                 $c.DetalleHistorial.Items[1].Disponible | Should Be $false

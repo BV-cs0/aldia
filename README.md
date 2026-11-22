@@ -1,4 +1,4 @@
-# Al Día
+﻿# Al Día
 
 Al Día revisa y actualiza aplicaciones de winget y Microsoft Store, actualizaciones de Windows, drivers ofrecidos por Windows Update y paquetes globales de npm. También detecta incidencias de dispositivos y recomienda herramientas oficiales del fabricante. Si Dell Command Update está instalado, puede aplicarle sus actualizaciones. Al Día avisa cuando hay que reiniciar.
 
@@ -71,3 +71,32 @@ Para explorar la interfaz y simular una instalación sin consultar el equipo ni 
 permisos de administrador, usa:
 
     .\aldia.ps1 gui --demo
+
+
+## Usarlo en el PC de otra persona
+
+Necesitas Windows 10 22H2 o Windows 11 y Windows PowerShell 5.1, que ya viene incluido.
+Copia la carpeta completa y abre **Abrir Al Día.cmd** para revisar el PC desde la carpeta o desde
+un USB. Para tener el acceso directo y las revisiones automáticas, ejecuta **Instalar Al Día.cmd**
+y acepta la solicitud de permisos de Windows. Si tu cuenta es estándar, Windows pedirá la contraseña de un administrador.
+
+Si falta el Instalador de aplicaciones de Microsoft, pulsa **Conseguirlo** en la ventana. También
+puedes descargarlo desde [Microsoft](https://aka.ms/getwinget). Mientras tanto puedes revisar Windows y
+los drivers. Puedes activar Office y Microsoft Store en Herramientas o en las claves
+office y store de config.fuentes.
+
+Pulsa **Guardar informe** en Herramientas o ejecuta
+**.\aldia.ps1 informe --ruta "C:\ruta\Informe Al Día.html"**. Si no eliges una ruta, Al Día sugiere
+el Escritorio. El informe se puede abrir sin internet e imprimir desde el navegador.
+
+## Privacidad
+
+Para revisar fallos de seguridad, Al Día consulta NVD y OSV con nombres o identificadores de
+programas y sus versiones. Envía a EPSS los identificadores de fallos (CVE) y descarga la lista de
+fallos aprovechados activamente de CISA. La clave opcional de NVD solo se envía a NVD. Al Día no
+pide cuentas ni envía telemetría. Windows Update, winget, npm y Microsoft Store consultan sus propios
+catálogos cuando están habilitados.
+
+El informe se guarda en el archivo que elijas. Incluye modelo y características del PC, pendientes,
+drivers con problemas, estado de seguridad y últimas diez ejecuciones. Omite nombres de usuario y
+equipo, números de serie, direcciones IP y MAC, claves de producto y clave de NVD.

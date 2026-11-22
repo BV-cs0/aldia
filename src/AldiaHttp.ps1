@@ -1,7 +1,9 @@
 ﻿function Invoke-AldiaHttp {
-    param([string]$Uri, [hashtable]$Headers = @{}, [string]$Body)
+    param([string]$Uri, [hashtable]$Headers = @{}, [string]$Body, [string]$Metodo = 'Get', [int]$Timeout = 60)
+    # Windows 10 antiguos con .NET 4.x pueden no ofrecer TLS 1.2 por defecto y NVD lo exige.
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
     $nvd = ([uri]$Uri).Host -eq 'services.nvd.nist.gov'
-    $opciones = @{ Uri=$Uri; Headers=$Headers; TimeoutSec=60; ErrorAction='Stop'; MaximumRedirection=0 }
+    $opciones = @{ Uri=$Uri; Headers=$Headers; TimeoutSec=$Timeout; Method=$Metodo; ErrorAction='Stop'; MaximumRedirection=0 }
     if ($PSBoundParameters.ContainsKey('Body')) {
         $opciones.Method = 'Post'
         $opciones.ContentType = 'application/json'
@@ -16,7 +18,7 @@
             }
             $script:AldiaUltimaNvd = [datetime]::UtcNow
         }
-        try { return (Invoke-RestMethod @opciones) }
+        try { return (Invoke-RestMethod @opciones -UseBasicParsing) }
         catch {
             if (!$nvd -or $intento -ne 0 -or [int]$_.Exception.Response.StatusCode -notin 403,429) { throw }
             Start-Sleep -Seconds 30
@@ -45,7 +47,7 @@ function Get-AldiaCacheSeguridad {
         }
     } catch { $ruta = $null }
     if ($previo -and $edad -lt $Horas) { return @{ Datos=$previo.Datos; Disponible=$true; Edad=0 } }
-    if ($SoloCache) {
+    if ($SoloCache -or $soloCacheInforme) {
         if ($previo) { return @{ Datos=$previo.Datos; Disponible=$true; Edad=[int][math]::Ceiling($edad) } }
         return @{ Disponible=$false; Edad=0 }
     }

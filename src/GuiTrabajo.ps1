@@ -33,6 +33,7 @@ function Get-AldiaHerramientasGui {
                 }
                 'Recomendaciones' { $herramientas.Recomendaciones = @(Get-AldiaRecomendaciones $gpu) }
                 'Inventario' {
+                    if ($estado.Winget -and $estado.Winget.Estado -ne 'ok') { break }
                     $herramientas.Inventario = @(Get-AldiaApps $Config -Inventario)
                     $herramientas.Adopciones = @(Get-AldiaAdopciones $Config -Inventario $herramientas.Inventario)
                 }
@@ -107,7 +108,21 @@ function Save-AldiaConfigGui {
 
 function Find-AldiaFilasGui {
     param($Config, [switch]$Demo)
-    $filas = @(foreach ($fuente in 'windows','pnp','drivers','apps','npm') {
+    if (!$Demo) {
+        $estado.SinInternet = !(Test-AldiaInternet)
+        if ($estado.SinInternet) {
+            Send-AldiaEventoGui filas @()
+            Send-AldiaEventoGui aviso $script:AldiaSinInternet
+            return
+        }
+        $winget = Get-AldiaEstadoWinget
+        $estado.Winget = $winget
+        Send-AldiaEventoGui winget $winget
+        if ((Get-AldiaCosteInternet) -eq 'medido') { Send-AldiaEventoGui aviso 'Conexión de datos limitada. Puedes continuar si quieres.' }
+        if (Test-AldiaDiscoBajo) { Send-AldiaEventoGui aviso $script:AldiaDiscoBajo }
+    }
+    $filas = @(foreach ($fuente in 'windows','pnp','drivers','apps','npm','office','store') {
+        if (!$Demo -and $fuente -ne 'pnp' -and !$Config.fuentes.$fuente) { continue }
         $fase = switch ($fuente) {
             'windows' { 'Buscando actualizaciones de Windows…' }
             { $_ -in 'pnp','drivers' } { 'Revisando drivers…' }
@@ -124,12 +139,9 @@ function Find-AldiaFilasGui {
                 'windows' { Find-AldiaActualizacionesWU (New-AldiaSesionWU) Software }
                 'drivers' { Get-AldiaDriversWU (New-AldiaSesionWU) $Config }
                 'pnp' { Get-AldiaProblemasPnP }
-                'apps' {
-                    if (!(Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue)) {
-                        throw 'winget no está disponible.'
-                    }
-                    Get-AldiaApps $Config
-                }
+                'apps' { if ($winget.Estado -eq 'ok') { Get-AldiaApps $Config } }
+                'office' { Get-AldiaOffice }
+                'store' { Get-AldiaStore }
                 'npm' { Get-AldiaNpm }
             })
             foreach ($elemento in $elementos) { ConvertTo-AldiaFilaGui $fuente $elemento $Config }
@@ -161,6 +173,8 @@ function Update-AldiaTrabajoGui {
     switch ($j.Fuente) {
         'apps' { Update-AldiaAppItem $Config $j.Paquete }
         'npm' { Update-AldiaNpmItem $Config $j.Paquete }
+        'office' { Update-AldiaOffice $Config }
+        'store' { Update-AldiaStore }
         { $_ -in 'drivers','windows' } {
             if (!$CacheWU.Sesion) { $CacheWU.Sesion = New-AldiaSesionWU }
             if (!$CacheWU.ContainsKey($j.Fuente)) {
@@ -185,7 +199,10 @@ function Update-AldiaTrabajosGui {
     param($Trabajos, $Config, [switch]$Demo)
     $inicio = (Get-Date).ToString('o')
     $cacheWU = @{}
-    if (!$Demo) { New-AldiaPuntoRestauracion $Config @($Trabajos.Fuente) }
+    if (!$Demo) {
+        if (Test-AldiaDiscoBajo) { Send-AldiaEventoGui aviso $script:AldiaDiscoBajo }
+        New-AldiaPuntoRestauracion $Config @($Trabajos.Fuente)
+    }
     $resultados = @(for ($i=0; $i -lt $Trabajos.Count; $i++) {
         $j = $Trabajos[$i]
         Send-AldiaEventoGui instalando @{ Clave=$j.Clave; Nombre=$j.Nombre; Actual=$i+1; Total=$Trabajos.Count }
@@ -198,7 +215,7 @@ function Update-AldiaTrabajosGui {
     })
     $resumen = Get-AldiaResumenGui $resultados
     $entrada = [pscustomobject]@{
-        Inicio=$inicio; Fin=(Get-Date).ToString('o'); Modo='ventana'; Codigo=[int]($resumen.Fallidas -gt 0)
+        Inicio=$inicio; Fin=(Get-Date).ToString('o'); Modo='ventana'; Completa=$false; Codigo=[int]($resumen.Fallidas -gt 0)
         Resultados=$resultados; RequiereReinicio=$resumen.Reinicio
     }
     Send-AldiaEventoGui resumen $resumen
@@ -244,8 +261,32 @@ function Invoke-AldiaTrabajoGui {
             }
             $config = Get-AldiaConfig $rutaConfig
         }
+        if (!$Demo -and $Operacion -in 'adoptar','consultarDeshacer','deshacer','fabricante') {
+            $estadoWinget = Get-AldiaEstadoWinget
+            if ($Operacion -in 'adoptar','fabricante' -and $estadoWinget.Estado -ne 'ok') {
+                Send-AldiaEventoGui aviso $estadoWinget.Mensaje
+                return
+            }
+        }
         switch ($Operacion) {
-            'analizar' { $filas = @(Find-AldiaFilasGui $config -Demo:$Demo) }
+            'analizar' {
+                $filas = @(Find-AldiaFilasGui $config -Demo:$Demo)
+                $estado.FilasInforme = $filas
+                $estado.SeguridadInforme = $null
+                if (!$Demo -and $estado.SinInternet) { return }
+            }
+            'informe' {
+                $datosInforme = if ($Demo) {
+                    @{ Equipo=@{ Modelo='Demostración' }; Filas=$estado.FilasInforme; Salud=@(Get-AldiaSaludDemo @{})
+                        Seguridad=Get-AldiaInformeDemoGui; Historial=$estado.HistorialDemo }
+                } elseif ($null -ne $estado.FilasInforme) {
+                    @{ Equipo=Get-AldiaDatosEquipoInforme; Filas=$estado.FilasInforme; Salud=$estado.SaludInforme
+                        Seguridad=$estado.SeguridadInforme; Historial=@(Read-AldiaHistorial $historialRuta)
+                        Aviso=if ($estado.SinInternet) { $script:AldiaSinInternet } }
+                }
+                $ruta = Save-AldiaInforme $config $Datos $historialRuta $datosInforme
+                Send-AldiaEventoGui fase "Informe guardado en $ruta"
+            }
             { $_ -in 'salud','accionSalud' } { Invoke-AldiaSaludGui $Operacion $Datos $Demo }
             'proteger' {
                 if ($Demo) { $estado.ProteccionDemo = $true }
@@ -273,6 +314,7 @@ function Invoke-AldiaTrabajoGui {
             'deshacer' {
                 if (!$Demo) { Assert-AldiaHistorialDeshacer $historialRuta }
                 $plan = Get-AldiaPlanDeshacer $Datos -Demo:$Demo
+                if ($plan.Omitido) { Send-AldiaEventoGui aviso $plan.Motivo; return }
                 $entrada = Invoke-AldiaDeshacer $config $plan $rutaConfig $historialRuta -Demo:$Demo
                 if ($Demo) { $estado.HistorialDemo += $entrada }
                 Send-AldiaEventoGui fase $entrada.Resultados[0].Mensaje
@@ -293,7 +335,7 @@ function Invoke-AldiaTrabajoGui {
                 if ($Demo) { Start-Sleep -Milliseconds 550 }
                 else {
                     $origen = if ($Datos -in '9N7R5S6B0ZZH','XP8CLZL93F5Z4P') { 'msstore' } else { 'winget' }
-                    $r = Invoke-AldiaComando winget.exe @('install','--id',$Datos,'--exact','--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity','--source',$origen) -Timeout ($config.timeoutMinutosPorPaquete * 60)
+                    $r = Invoke-AldiaWinget @('install','--id',$Datos,'--exact','--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity','--source',$origen) -Timeout ($config.timeoutMinutosPorPaquete * 60)
                     if ($r.Timeout -or $r.Codigo -ne 0) { throw "No se pudo instalar la herramienta. $($r.Error) (código $($r.Codigo))" }
                 }
                 Send-AldiaEventoGui fase $(if ($Demo) { 'Instalación de ejemplo completada.' } else { 'Herramienta instalada.' })
@@ -324,12 +366,14 @@ function Invoke-AldiaTrabajoGui {
             Send-AldiaEventoGui fase 'Comprobando seguridad…'
             Send-AldiaEventoGui seguridadEnCurso $null
             $informe = if ($Demo) { Get-AldiaInformeDemoGui } else {
+                $estadoWinget = $estado.Winget
                 $pendientes = @($filas | Where-Object { $_.Fuente -eq 'apps' -and $_.Habilitada } | ForEach-Object Paquete)
                 Get-AldiaVulnerabilidades $config -Pendientes $pendientes -Progreso {
                     param($actual,$total)
-                    Send-AldiaEventoGui fase "Comprobando seguridad… $actual/$total"
+                    Send-AldiaEventoGui fase "Comprobando seguridad: $actual de $total programas"
                 }
             }
+            $estado.SeguridadInforme = $informe
             Send-AldiaEventoGui seguridad $informe
         }
     } catch { Send-AldiaEventoGui aviso $_.Exception.Message }

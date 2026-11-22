@@ -21,12 +21,15 @@ function Merge-AldiaConfig {
         $valido = $false
         if ($base.Value -is [pscustomobject]) {
             if ($valor -is [pscustomobject]) { Merge-AldiaConfig $base.Value $valor "$ruta."; continue }
+        } elseif ($ruta -eq 'fijados') {
+            $valido = $valor -is [array] -and !@($valor | Where-Object { !(Test-AldiaEntradaFijada $_) }).Count
         } elseif ($base.Value -is [array]) {
             $valido = $valor -is [array] -and @($valor | Where-Object { $_ -isnot [string] }).Count -eq 0
         } elseif ($base.Value -is [bool]) {
             $valido = $valor -is [bool]
         } elseif ($base.Value -is [string]) {
             $valido = $valor -is [string] -and $(switch ($clave) {
+                'nvdApiKey' { $ruta -eq 'vulnerabilidades.nvdApiKey' -and $valor -cnotmatch '[\r\n]' }
                 'horaDiaria' { (Test-AldiaHora $valor) }
                 'notificar' { $valor -cin @('siempre','solo-cambios','solo-errores','nunca') }
             })
@@ -43,4 +46,13 @@ function Merge-AldiaConfig {
 function Test-AldiaHora {
     param($Valor)
     $Valor -is [string] -and $Valor -cmatch '\A(?:[01][0-9]|2[0-3]):[0-5][0-9]\z'
+}
+function Test-AldiaEntradaFijada {
+    param($Entrada)
+    if ($Entrada -isnot [pscustomobject] -or $Entrada.fuente -notin 'apps','npm','windows' -or
+        @($Entrada.PSObject.Properties).Count -ne 5) { return $false }
+    foreach ($clave in 'fuente','id','version','fecha','motivo') {
+        if ($Entrada.$clave -isnot [string] -or [string]::IsNullOrWhiteSpace($Entrada.$clave)) { return $false }
+    }
+    $true
 }

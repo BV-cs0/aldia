@@ -198,7 +198,21 @@
                         </StackPanel>
                     </Grid>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="Filas" Margin="0,0,8,0"/>
+                        <StackPanel Margin="0,0,8,0">
+                            <StackPanel x:Name="Seguridad"/>
+                            <StackPanel x:Name="Filas"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Salud">
+                <DockPanel Margin="12,8">
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                        <Button x:Name="RevisarSalud" DockPanel.Dock="Right" Content="Volver a comprobar"/>
+                        <TextBlock x:Name="ResumenSalud" FontSize="20" FontWeight="SemiBold" VerticalAlignment="Center" Text="Comprobando salud…"/>
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="TarjetasSalud" Margin="0,0,8,0"/>
                     </ScrollViewer>
                 </DockPanel>
             </TabItem>
@@ -232,6 +246,21 @@
                                     <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
+                            <DataGridTemplateColumn Header="Deshacer" Width="2*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="2">
+                                            <Button Content="Deshacer" Tag="{Binding Plan}" IsEnabled="{Binding Disponible}"
+                                                    Visibility="{Binding MostrarDeshacer}" HorizontalAlignment="Left"/>
+                                            <Button Content="Abrir Restaurar sistema" Tag="{Binding Plan}"
+                                                    Visibility="{Binding MostrarRestaurar}" HorizontalAlignment="Left"/>
+                                            <Button Content="Administrador de dispositivos" Tag="{Binding Plan}"
+                                                    Visibility="{Binding MostrarControlador}" HorizontalAlignment="Left"/>
+                                            <TextBlock Text="{Binding Motivo}" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                         </DataGrid.Columns>
                     </DataGrid>
                 </Grid>
@@ -244,7 +273,9 @@
                         <StackPanel x:Name="Gpu"/>
                         <TextBlock Text="Programas que nada actualiza" Style="{StaticResource Subtitulo}"/>
                         <TextBlock Text="Al Día no puede actualizarlos con winget. Revisa si el programa tiene su propio actualizador o consulta la web del fabricante." TextWrapping="Wrap" Margin="0,0,0,5"/>
-                        <ItemsControl x:Name="Inventario"/>
+                        <StackPanel x:Name="Inventario"/>
+                        <TextBlock Text="Programas fijados" Style="{StaticResource Subtitulo}"/>
+                        <StackPanel x:Name="Fijados"/>
                         <TextBlock Text="Puntos de restauración" Style="{StaticResource Subtitulo}"/>
                         <Border Background="White" BorderBrush="#DFE7F0" BorderThickness="1" CornerRadius="8" Padding="10,6">
                             <DockPanel>

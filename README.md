@@ -30,6 +30,12 @@ Ejecuta estas órdenes con el script de la copia instalada o desde el repositori
 | .\aldia.ps1 actualizar --programado --forzar | Omite el límite de 20 horas. |
 | .\aldia.ps1 drivers | Muestra incidencias, ofertas de Windows Update y recomendaciones del fabricante. |
 | .\aldia.ps1 inventario | Muestra los programas de instaladores clásicos (ARP), salvo los juegos gestionados por Steam. |
+| .\aldia.ps1 vulnerabilidades | Consulta fallos conocidos en las versiones instaladas y los ordena por riesgo. |
+| .\aldia.ps1 salud | Muestra doce comprobaciones de solo lectura, sin pedir elevación. |
+| .\aldia.ps1 adoptar | Busca paquetes de winget para programas sin actualizador conocido. |
+| .\aldia.ps1 adoptar --id OpenJS.NodeJS.24 | Instala el paquete indicado tras pedir confirmación. Requiere administración. |
+| .\aldia.ps1 deshacer --id Git.Git | Vuelve a la versión anterior de la última actualización completada si sigue disponible. Requiere administración. |
+| .\aldia.ps1 fijados | Muestra los elementos omitidos por el actualizador tras deshacer. Desde Herramientas puedes dejar de fijarlos. |
 | .\aldia.ps1 historial -n 10 | Resume las diez últimas ejecuciones. |
 | .\aldia.ps1 config | Abre la configuración instalada en el Bloc de notas elevado. |
 | .\aldia.ps1 desinstalar | Quita la tarea y el programa. Añade --todo para borrar también los registros. |
@@ -39,6 +45,8 @@ Los códigos de salida son 0 si todo fue bien, 1 si falló alguna actualización
 ## Configuración y registros
 
 Edita config.json desde la orden config. config.default.json incluye todos los valores predeterminados. Puedes habilitar cada fuente en fuentes, excluir Id de winget y nombres npm en excluir, activar versiones desconocidas y ajustar el timeout por paquete. Las opciones de drivers permiten excluir clases y repetir la detección de dispositivos. También puedes elegir si crear puntos de restauración, la batería mínima, los días de retención y cuándo mostrar notificaciones (siempre, solo-cambios, solo-errores o nunca). Después de cambiar horaDiaria, ejecuta instalar de nuevo para aplicar la hora a la tarea.
+
+La tarea comprueba las vulnerabilidades después de actualizar y añade los casos graves a la notificación. Configura esta comprobación con vulnerabilidades.activado. La clave NVD es opcional y se configura con vulnerabilidades.nvdApiKey. El mapeo a productos de NVD se lee de datos\cpe.json y la caché se guarda en %ProgramData%\Aldia\cache. La orden vulnerabilidades permite consultar manualmente aunque la comprobación automática esté desactivada.
 
 Los logs están en %ProgramData%\Aldia\logs y el historial en %ProgramData%\Aldia\historial.jsonl. Cada actualización de winget tiene además su propio log.
 
@@ -53,7 +61,9 @@ Abre **Al Día** desde el menú Inicio, el escritorio o con PowerShell:
 
     .\aldia.ps1 gui
 
-El escáner agrupa las actualizaciones y permite elegir cuáles instalar. **Historial**
+El escáner agrupa las actualizaciones, permite elegir cuáles instalar y muestra los
+fallos de seguridad conocidos. **Salud** muestra los diagnósticos y pide confirmación
+antes de ejecutar una acción que cambie el sistema. **Historial**
 muestra el resultado de cada ejecución. **Herramientas** reúne las recomendaciones
 del fabricante, el inventario y la configuración de la actualización automática.
 

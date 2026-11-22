@@ -1,6 +1,7 @@
 {
   "fuentes": { "apps": true, "windows": true, "drivers": true, "npm": true },
   "excluir": [],
+  "fijados": [],
   "incluirVersionDesconocida": true,
   "timeoutMinutosPorPaquete": 30,
   "puntoRestauracion": true,
@@ -8,5 +9,6 @@
   "horaDiaria": "12:00",
   "bateriaMinima": 50,
   "drivers": { "excluirClases": [], "rescanearDispositivos": true },
+  "vulnerabilidades": { "activado": true, "nvdApiKey": "" },
   "diasLogs": 60
 }

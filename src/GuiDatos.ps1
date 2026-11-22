@@ -21,7 +21,8 @@
                 if ($fecha -is [datetime]) { $fecha = $fecha.ToString('dd/MM/yyyy',[cultureinfo]::InvariantCulture) }
                 $detalle = (@($Elemento.DriverManufacturer, $Elemento.DriverClass, $fecha) | Where-Object { $_ }) -join ' · '
             } else {
-                $detalle = ($Elemento.KBArticleIDs | ForEach-Object { "KB$_" }) -join ', '
+                $kb = ($Elemento.KBArticleIDs | ForEach-Object { "KB$_" }) -join ', '
+                $detalle = (@($kb,(Get-AldiaSeveridadWU $Elemento)) | Where-Object { $_ }) -join ' · '
             }
             if (!$id) { $motivo = 'Windows Update no proporcionó un identificador.' }
             if ($Elemento.InstallationBehavior.CanRequestUserInput) { $motivo = 'Requiere interacción.' }
@@ -37,13 +38,17 @@
             }
         }
     }
+    if (($Fuente -in 'apps','npm' -and (Test-AldiaFijado $Config $Fuente $id)) -or
+        ($Fuente -eq 'windows' -and (Test-AldiaWUFijada $Config $Elemento))) {
+        $motivo = 'Fijado por Al Día. Puedes dejar de fijarlo en Herramientas.'
+    }
     $categorias = @{ pnp='Dispositivos sin driver'; drivers='Drivers'; windows='Actualizaciones de Windows'; apps='Programas'; npm='npm' }
     $iconos = @{ pnp=0xE7BA; drivers=0xE950; windows=0xE777; apps=0xE71D; npm=0xE8B7 }
     $disponible = !$motivo
     [pscustomobject]@{
         Clave=[guid]::NewGuid().ToString(); Fuente=$Fuente; Categoria=$categorias[$Fuente]
         Icono=[string][char]$iconos[$Fuente]; Id=$id; Nombre=$nombre; Detalle=$detalle
-        Hardware=$hardware; Bytes=$bytes; Motivo=$motivo; Habilitada=$disponible; Seleccionada=$disponible
+        Riesgo=0; Hardware=$hardware; Bytes=$bytes; Motivo=$motivo; Habilitada=$disponible; Seleccionada=$disponible
         Estado=if ($disponible) { 'Pendiente' } else { 'No disponible' }
         Paquete=if ($Fuente -in 'apps','npm') { $Elemento }
     }
@@ -101,7 +106,7 @@ function Get-AldiaDemoGui {
         DriverVerDate=[datetime]'2025-09-15'; Identity=@{ UpdateID='demo-driver' }; MaxDownloadSize=18MB
     }) $Config
     ConvertTo-AldiaFilaGui windows ([pscustomobject]@{
-        Title='Actualización acumulativa de Windows'; KBArticleIDs=@('5000000')
+        Title='Actualización acumulativa de Windows'; MsrcSeverity='Critical'; KBArticleIDs=@('5000000')
         Identity=@{UpdateID='demo-windows'}; MaxDownloadSize=420MB
     }) $Config
     foreach ($p in @(

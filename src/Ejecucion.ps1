@@ -11,7 +11,7 @@ function Get-AldiaMotivoOmision {
     param($Config, $Historial, [switch]$Forzar, [datetime]$Ahora = (Get-Date))
     if (!$Forzar) {
         foreach ($h in $Historial) {
-            if ($null -ne $h.Codigo -and $h.Codigo -in 0,1 -and $h.Fin) {
+            if ($h.Modo -ne 'deshacer' -and $null -ne $h.Codigo -and $h.Codigo -in 0,1 -and $h.Fin) {
                 $fin = [datetime]$h.Fin
                 if ($fin -le $Ahora -and $fin -gt $Ahora.AddHours(-20)) {
                     return 'Hubo una ejecución completada hace menos de 20 horas.'
@@ -25,7 +25,7 @@ function Get-AldiaMotivoOmision {
 
 function Get-AldiaFallosRepetidos {
     param($Historial, $Actual)
-    $previas = @($Historial | Select-Object -Last 2)
+    $previas = @($Historial | Where-Object Modo -ne deshacer | Select-Object -Last 2)
     if ($previas.Count -lt 2) { return }
     $vistos = @{}
     foreach ($r in $Actual) {
@@ -151,6 +151,18 @@ function Invoke-AldiaActualizacion {
         foreach ($nombre in Get-AldiaFallosRepetidos $historial $resultados) {
             $resumen += " $nombre lleva 3 ejecuciones sin poder actualizarse: hazlo a mano."
         }
+        $seguridad = $null
+        if ($programado -and $Config.vulnerabilidades.activado) {
+            try {
+                $informe = Get-AldiaVulnerabilidades $Config
+                foreach ($aviso in $informe.Avisos) { Write-AldiaLog $aviso }
+                foreach ($item in $informe.Programas | Where-Object { $_.Nivel -or $_.Edad -or $_.Detalle -like 'No se pudo*' }) {
+                    Write-AldiaLog "$($item.Nombre): $($item.Detalle)"
+                }
+                $seguridad = Get-AldiaResumenSeguridad $informe
+                if ($seguridad) { $resumen += " $seguridad" }
+            } catch { Write-AldiaLog 'No se pudo completar la comprobación de seguridad.' }
+        }
         Write-AldiaLog $resumen
         foreach ($fuente in $Fuentes) {
             $items = @($resultados | Where-Object Fuente -eq $fuente)
@@ -173,8 +185,8 @@ function Invoke-AldiaActualizacion {
             }
         }
         if (!$programado) { Write-Host "Al Día: $resumen" }
-        if ($Config.notificar -eq 'siempre' -or ($Config.notificar -eq 'solo-cambios' -and $cambios.Count) -or
-            ($Config.notificar -eq 'solo-errores' -and $fallos.Count)) { Send-AldiaToast $resumen }
+        if ($Config.notificar -eq 'siempre' -or ($Config.notificar -eq 'solo-cambios' -and ($cambios.Count -or $seguridad)) -or
+            ($Config.notificar -eq 'solo-errores' -and ($fallos.Count -or $seguridad))) { Send-AldiaToast $resumen }
         try { Clear-AldiaLogs $directorioLog $Config.diasLogs } catch { Write-AldiaLog "No se pudieron rotar los logs: $_" }
         return $codigo
     } finally {
@@ -209,7 +221,8 @@ function Invoke-AldiaRevision {
                 }
                 'windows' {
                     $items = @(Find-AldiaActualizacionesWU (New-AldiaSesionWU) Software)
-                    Show-AldiaTabla windows $items ([ordered]@{ Title=64; KBArticleIDs=16 })
+                    $items = @($items | Select-Object Title, KBArticleIDs, @{Name='Seguridad';Expression={ Get-AldiaSeveridadWU $_ }})
+                    Show-AldiaTabla windows $items ([ordered]@{ Title=48; KBArticleIDs=14; Seguridad=24 })
                 }
                 'drivers' {
                     $items = @(Get-AldiaDriversWU (New-AldiaSesionWU) $Config)
@@ -243,11 +256,11 @@ function Invoke-AldiaCli {
     $pausar = $Argumentos -contains '--pausar' -and !$programado
     try {
         $orden = $Argumentos[0]
-        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui') {
-            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config y gui.'
+        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui','vulnerabilidades','salud','adoptar','deshacer','fijados') {
+            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config, gui, vulnerabilidades, salud, adoptar, deshacer y fijados.'
         }
         if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
-        $solo = @(); $n = 10; $forzar = $false; $todo = $false
+        $solo = @(); $n = 10; $forzar = $false; $todo = $false; $id = $null
         $fuentesValidas = @('windows','drivers','apps','npm')
         for ($i = 1; $i -lt $Argumentos.Count; $i++) {
             $opcion = $Argumentos[$i]
@@ -264,6 +277,12 @@ function Invoke-AldiaCli {
                         throw 'Indica fuentes válidas para --solo: apps,windows,drivers,npm.'
                     }
                 }
+                { $_ -in 'adoptar/--id','deshacer/--id' } {
+                    $i++
+                    $id = $Argumentos[$i]
+                    if ($id -notmatch '^(?:@[A-Za-z0-9._-]+/)?[A-Za-z0-9][A-Za-z0-9._+-]*$' -or
+                        ($orden -eq 'adoptar' -and $id -match '[@/]')) { throw 'Indica un identificador válido.' }
+                }
                 'desinstalar/--todo' { $todo = $true }
                 'historial/-n' {
                     $i++
@@ -276,7 +295,8 @@ function Invoke-AldiaCli {
         $historialRuta = Join-Path $datos 'historial.jsonl'
         $programa = Get-AldiaProgramFiles
         $rutaConfig = Join-Path $programa 'config.json'
-        $requiereAdmin = $orden -in 'actualizar','instalar','desinstalar','config' -and !$simular
+        if ($orden -eq 'deshacer' -and !$id) { throw 'Indica el identificador con --id.' }
+        $requiereAdmin = ($orden -in 'actualizar','instalar','desinstalar','config','deshacer' -or ($orden -eq 'adoptar' -and $id)) -and !$simular
         if ($requiereAdmin -and !(Test-AldiaAdmin)) {
             if ($programado) { throw 'La tarea debe ejecutarse con privilegios elevados.' }
             $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
@@ -304,6 +324,20 @@ otepad.exe') @($rutaConfig) -Visible
             'actualizar' { return (Invoke-AldiaActualizacion $config $fuentes $historialRuta -Simular:$simular -Forzar:$forzar) }
             'revisar' { return (Invoke-AldiaRevision $config $fuentes) }
             'drivers' { Show-AldiaDrivers $config }
+            'vulnerabilidades' { Show-AldiaVulnerabilidadesCli $config }
+            'salud' { Show-AldiaSaludCli }
+            'adoptar' {
+                if ($id) {
+                    Write-Host $script:AldiaAvisoAdopcion
+                    if ((Read-Host '¿Continuar? [s/N]') -ne 's') { return 3 }
+                    return (Invoke-AldiaCambioCli adoptar $id $rutaConfig $historialRuta)
+                }
+                Show-AldiaTabla 'Programas que puedes adoptar' @(Get-AldiaAdopciones $config) ([ordered]@{ Nombre=36; Version=14; Id=40; Confianza=10 })
+            }
+            'deshacer' { return (Invoke-AldiaCambioCli deshacer $id $rutaConfig $historialRuta) }
+            'fijados' {
+                Show-AldiaTabla 'Programas fijados' $config.fijados ([ordered]@{ fuente=8; id=38; version=16; fecha=25; motivo=24 })
+            }
             'inventario' {
                 $items = @(Get-AldiaApps $config -Inventario)
                 Show-AldiaTabla 'Programas de instaladores clásicos' $items ([ordered]@{ Nombre=40; Version=12; Id=55 })
@@ -337,5 +371,39 @@ function New-AldiaPuntoRestauracion {
                 Checkpoint-Computer -Description 'Al Día' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningAction Stop | Out-Null
             }
         } catch { Write-AldiaLog "No se pudo crear el punto de restauración: $_" }
+    }
+}
+
+function Invoke-AldiaCambioCli {
+    param($Orden, $Id, $RutaConfig, $HistorialRuta)
+    $mutex = [Threading.Mutex]::new($false,'Global\Aldia')
+    $adquirido = $false
+    try {
+        try { $adquirido = $mutex.WaitOne(0) }
+        catch [Threading.AbandonedMutexException] { $adquirido = $true }
+        if (!$adquirido) { Write-Host 'Hay una actualización en curso.'; return 3 }
+        $config = Get-AldiaConfig $RutaConfig
+        if ($Orden -eq 'adoptar') {
+            Write-Host (Invoke-AldiaAdopcion $config $Id)
+            return 0
+        }
+        Assert-AldiaRutaNormal (Split-Path $HistorialRuta)
+        Assert-AldiaRutaNormal $HistorialRuta
+        if (Test-Path -LiteralPath $HistorialRuta) {
+            Assert-AldiaHistorialDeshacer $HistorialRuta
+        }
+        $resultado = Read-AldiaHistorial $HistorialRuta | Sort-Object Inicio -Descending |
+            ForEach-Object { $_.Resultados } | Where-Object { $_.Estado -eq 'actualizado' -and ($_.Id -eq $Id -or $_.KB -eq $Id) } |
+            Select-Object -First 1
+        if (!$resultado) { throw "No hay una actualización completada para $Id." }
+        $plan = Get-AldiaPlanDeshacer $resultado
+        if (!$plan.Disponible) { throw $plan.Motivo }
+        if ((Read-Host "¿Volver a $($plan.Version) y fijar $Id? [s/N]") -ne 's') { return 3 }
+        $entrada = Invoke-AldiaDeshacer $config $plan $RutaConfig $HistorialRuta
+        Write-Host $entrada.Resultados[0].Mensaje
+        0
+    } finally {
+        if ($adquirido) { $mutex.ReleaseMutex() }
+        $mutex.Dispose()
     }
 }

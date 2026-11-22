@@ -30,6 +30,7 @@ Describe 'Parser de winget' {
         $script:fixtures = Join-Path $PSScriptRoot 'fixtures'
         . (Join-Path $script:raizPruebas 'src/Registro.ps1')
         . (Join-Path $script:raizPruebas 'src/Winget.ps1')
+        . (Join-Path $script:raizPruebas 'src/Deshacer.ps1')
         function Read-FixtureWinget($Nombre) {
             ConvertFrom-AldiaWinget (Get-Content -LiteralPath (Join-Path $script:fixtures "winget-upgrade-$Nombre.txt") -Raw -Encoding UTF8)
         }

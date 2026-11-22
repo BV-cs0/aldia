@@ -18,7 +18,8 @@ function Get-AldiaHerramientasGui {
                 @{ Herramienta='AMD Software Adrenalin'; Instalado='sí'; Version='25.1'; Equipo='GPU AMD'; Url='https://www.amd.com/' }
             )
             Gpu=@(@{ Nombre='Gráficos de ejemplo'; Aviso='Driver de GPU con más de 12 meses.' })
-            Inventario=@(@{ Nombre='Programa de ejemplo'; Version='1.0' })
+            Inventario=@(if (!$estado.AdoptadoDemo) { @{ Nombre='Node.js'; Version='24.22.2'; Id='ARP\Demo\Node' } })
+            Adopciones=@(if (!$estado.AdoptadoDemo) { @{ Id='OpenJS.NodeJS.24'; ArpId='ARP\Demo\Node'; Confianza='alta' } })
             Config=$Config; Activa=$estado.ActivaDemo; Errores=@()
         }
     }
@@ -31,7 +32,10 @@ function Get-AldiaHerramientasGui {
                     $herramientas.Gpu = @(Get-AldiaGpuAntiguas $gpu)
                 }
                 'Recomendaciones' { $herramientas.Recomendaciones = @(Get-AldiaRecomendaciones $gpu) }
-                'Inventario' { $herramientas.Inventario = @(Get-AldiaApps $Config -Inventario) }
+                'Inventario' {
+                    $herramientas.Inventario = @(Get-AldiaApps $Config -Inventario)
+                    $herramientas.Adopciones = @(Get-AldiaAdopciones $Config -Inventario $herramientas.Inventario)
+                }
                 'Activa' {
                     $tarea = Get-AldiaTareaGui
                     if ($tarea) { $herramientas.Activa = [bool]$tarea.Enabled }
@@ -134,14 +138,21 @@ function Find-AldiaFilasGui {
         }
     })
     Send-AldiaEventoGui filas $filas
+    $filas
 }
 
 function Update-AldiaTrabajoGui {
     param($Trabajo, $Config, $CacheWU, [switch]$Demo)
     $j = $Trabajo
+    if (Test-AldiaFijado $Config $j.Fuente $j.Id) {
+        return (New-AldiaResultado $j.Fuente $j.Id omitido $null 'Fijado por Al Día.' -Titulo $j.Nombre)
+    }
     if ($Demo) {
         Start-Sleep -Milliseconds 550
         if ($j.Fuente -eq 'npm') { return (New-AldiaResultado npm $j.Id fallo 1 'Ejemplo: no se pudo descargar el paquete.' -Titulo $j.Nombre) }
+        if ($j.Fuente -eq 'apps') {
+            return (New-AldiaResultado apps $j.Id actualizado 0 '' $j.Paquete.Version $j.Paquete.Disponible -Titulo $j.Nombre)
+        }
         return (New-AldiaResultado $j.Fuente $j.Id actualizado 0 '' -Reinicio ($j.Fuente -eq 'windows') -Titulo $j.Nombre)
     }
     if ($j.Fuente -in 'apps','npm' -and $j.Id -in $Config.excluir) {
@@ -162,7 +173,9 @@ function Update-AldiaTrabajoGui {
                 $CacheWU[$j.Fuente] = $porId
             }
             $actualizacion = $CacheWU[$j.Fuente][$j.Id]
-            if ($actualizacion) { Update-AldiaWUItem $CacheWU.Sesion $actualizacion $j.Fuente }
+            if ($j.Fuente -eq 'windows' -and $actualizacion -and (Test-AldiaWUFijada $Config $actualizacion)) {
+                New-AldiaResultado windows $j.Id omitido $null 'Fijado por Al Día.' -Titulo $j.Nombre
+            } elseif ($actualizacion) { Update-AldiaWUItem $CacheWU.Sesion $actualizacion $j.Fuente }
             else { New-AldiaResultado $j.Fuente $j.Id 'no-aplicable' $null 'Windows Update ya no ofrece esta actualización.' -Titulo $j.Nombre }
         }
     }
@@ -206,15 +219,16 @@ function Invoke-AldiaTrabajoGui {
         }
         Send-AldiaEventoGui ocupado (!$Demo -and !$adquirido)
         if ($Operacion -eq 'estado') { return }
-        if (!$Demo -and !$adquirido -and $Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger') {
+        if (!$Demo -and !$adquirido -and $Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger','accionSalud','adoptar','deshacer','desfijar') {
             Send-AldiaEventoGui aviso 'Espera a que termine la actualización en curso.'
             return
         }
-        if ($Operacion -eq 'analizar' -and $adquirido) {
+        if ($Operacion -in 'analizar','salud' -and $adquirido) {
             $mutex.ReleaseMutex()
             $adquirido = $false
         }
         if ($Demo) {
+            if (!$estado.CambiosSaludDemo) { $estado.CambiosSaludDemo = @{} }
             if (!$estado.ConfigDemo) { $estado.ConfigDemo = Get-AldiaConfig }
             $config = $estado.ConfigDemo
         } else {
@@ -231,12 +245,43 @@ function Invoke-AldiaTrabajoGui {
             $config = Get-AldiaConfig $rutaConfig
         }
         switch ($Operacion) {
-            'analizar' { Find-AldiaFilasGui $config -Demo:$Demo }
+            'analizar' { $filas = @(Find-AldiaFilasGui $config -Demo:$Demo) }
+            { $_ -in 'salud','accionSalud' } { Invoke-AldiaSaludGui $Operacion $Datos $Demo }
             'proteger' {
                 if ($Demo) { $estado.ProteccionDemo = $true }
                 else { Enable-ComputerRestore -Drive "$env:SystemDrive\" -ErrorAction Stop }
                 Send-AldiaEventoGui proteccion 'activada'
+                $item = if ($Demo) {
+                    $estado.CambiosSaludDemo.restauracion = $true
+                    Get-AldiaSaludDemo $estado.CambiosSaludDemo | Where-Object Id -eq restauracion
+                } else { Get-AldiaComprobacionSalud restauracion }
+                Send-AldiaEventoGui salud @($item)
                 Send-AldiaEventoGui fase 'Protección del sistema activada.'
+            }
+            'adoptar' {
+                $mensaje = Invoke-AldiaAdopcion $config $Datos -Demo:$Demo
+                if ($Demo) { $estado.AdoptadoDemo = $true }
+                Send-AldiaEventoGui fase $mensaje
+            }
+            'consultarDeshacer' {
+                $planes = @(foreach ($resultado in $Datos.Resultados) {
+                    try { Get-AldiaPlanDeshacer $resultado -Demo:$Demo }
+                    catch { @{ Resultado=$resultado; Disponible=$false; Motivo=$_.Exception.Message } }
+                })
+                Send-AldiaEventoGui planesDeshacer @{ Seleccion=$Datos.Seleccion; Planes=$planes }
+            }
+            'deshacer' {
+                if (!$Demo) { Assert-AldiaHistorialDeshacer $historialRuta }
+                $plan = Get-AldiaPlanDeshacer $Datos -Demo:$Demo
+                $entrada = Invoke-AldiaDeshacer $config $plan $rutaConfig $historialRuta -Demo:$Demo
+                if ($Demo) { $estado.HistorialDemo += $entrada }
+                Send-AldiaEventoGui fase $entrada.Resultados[0].Mensaje
+                if ($entrada.RequiereReinicio) { Send-AldiaEventoGui reinicioPendiente $true }
+            }
+            'desfijar' {
+                $config.fijados = @($config.fijados | Where-Object { $_.fuente -ne $Datos.fuente -or $_.id -ne $Datos.id })
+                if (!$Demo) { Save-AldiaFijados $config $rutaConfig }
+                Send-AldiaEventoGui fase "Se dejó de fijar $($Datos.id)."
             }
             'instalar' { Update-AldiaTrabajosGui $Datos $config -Demo:$Demo }
             'guardar' {
@@ -260,7 +305,7 @@ function Invoke-AldiaTrabajoGui {
                 } else { Send-AldiaEventoGui fase 'Reinicio simulado.' }
             }
         }
-        if ($Operacion -in 'analizar','instalar') {
+        if ($Operacion -in 'analizar','instalar','deshacer') {
             $historial = if ($Demo) { $estado.HistorialDemo } else { Read-AldiaHistorial $historialRuta }
             Send-AldiaEventoGui historial @($historial | Sort-Object Inicio -Descending)
         }
@@ -270,8 +315,22 @@ function Invoke-AldiaTrabajoGui {
             } else { Get-AldiaProteccionGui }
             Send-AldiaEventoGui proteccion $proteccion
         }
-        if ($Operacion -in 'analizar','fabricante') {
+        if ($Operacion -eq 'analizar') { Invoke-AldiaSaludGui salud $null $Demo }
+        if ($Operacion -in 'analizar','fabricante','adoptar') {
             Send-AldiaEventoGui herramientas (Get-AldiaHerramientasGui $config -Demo:$Demo)
+        }
+        if ($Operacion -in 'deshacer','desfijar') { Send-AldiaEventoGui fijados $config.fijados }
+        if ($Operacion -eq 'analizar' -and $config.vulnerabilidades.activado) {
+            Send-AldiaEventoGui fase 'Comprobando seguridad…'
+            Send-AldiaEventoGui seguridadEnCurso $null
+            $informe = if ($Demo) { Get-AldiaInformeDemoGui } else {
+                $pendientes = @($filas | Where-Object { $_.Fuente -eq 'apps' -and $_.Habilitada } | ForEach-Object Paquete)
+                Get-AldiaVulnerabilidades $config -Pendientes $pendientes -Progreso {
+                    param($actual,$total)
+                    Send-AldiaEventoGui fase "Comprobando seguridad… $actual/$total"
+                }
+            }
+            Send-AldiaEventoGui seguridad $informe
         }
     } catch { Send-AldiaEventoGui aviso $_.Exception.Message }
     finally {

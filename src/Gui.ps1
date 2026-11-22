@@ -1,11 +1,12 @@
 ﻿$script:AldiaNombresGui = @(
     'Demo','Ocupado','BandaReinicio','Reiniciar','Fase','Avisos','Progreso','Titular','IconoTitular',
     'ResumenInstalacion','BandaProteccion','AvisoProteccion','EstadoProteccion','ActivarProteccion','Todas','Ninguna','Seleccionadas','Analizar','Actualizar','Filas','Historial','DetalleHistorial',
-    'Fabricantes','Gpu','Inventario','Ajustes','Automatica','Hora','FuenteWindows','FuenteDrivers','FuenteApps','FuenteNpm','Guardar'
+    'Fabricantes','Gpu','Inventario','Fijados','Ajustes','Automatica','Hora','FuenteWindows','FuenteDrivers','FuenteApps','FuenteNpm','Guardar',
+    'Seguridad','ResumenSalud','RevisarSalud','TarjetasSalud'
 )
 $script:AldiaEstadosGui = @{
     actualizado='Actualizado ✓'; fallo='Falló ✗'; timeout='Falló ✗'; persistente='Falló ✗'
-    'no-aplicable'='No disponible'; omitido='No disponible'
+    revertido='Revertido'; 'no-aplicable'='No disponible'; omitido='No disponible'
 }
 
 function New-AldiaVentanaGui {
@@ -34,8 +35,9 @@ function Start-AldiaOperacionGui {
     param($Operacion, $Datos)
     $g = $script:AldiaGui
     if ($g.Pendiente) {
-        if (!$g.Operacion -and $Operacion -ne 'estado') {
+        if ((!$g.Operacion -or $g.Operacion -eq 'seguridad') -and $Operacion -ne 'estado') {
             $g.SiguienteOperacion = @{ Nombre=$Operacion; Datos=$Datos }
+            Update-AldiaControlesGui
         }
         return
     }
@@ -43,12 +45,19 @@ function Start-AldiaOperacionGui {
         $g.Operacion = $Operacion
         $g.Controles.Avisos.Clear()
         $g.Controles.Avisos.Visibility = 'Collapsed'
-        $g.Controles.Fase.Text = switch ($Operacion) {
-            'analizar' { 'Preparando el análisis…' }
-            'proteger' { 'Activando la protección del sistema…' }
-            'guardar' { 'Guardando la configuración…' }
-            'reiniciar' { 'Solicitando el reinicio…' }
-            default { 'Preparando la instalación…' }
+        if ($Operacion -ne 'consultarDeshacer') {
+            $g.Controles.Fase.Text = switch ($Operacion) {
+                'analizar' { 'Preparando el análisis…' }
+                'seguridad' { 'Comprobando seguridad…' }
+                'salud' { 'Comprobando salud…' }
+                'accionSalud' { 'Aplicando la acción…' }
+                'proteger' { 'Activando la protección del sistema…' }
+                'guardar' { 'Guardando la configuración…' }
+                'reiniciar' { 'Solicitando el reinicio…' }
+                'deshacer' { 'Deshaciendo la actualización…' }
+                'desfijar' { 'Guardando los programas fijados…' }
+                default { 'Preparando la instalación…' }
+            }
         }
         $g.Controles.Progreso.Value = 0
         $g.Controles.Progreso.IsIndeterminate = $true
@@ -76,13 +85,17 @@ function Update-AldiaControlesGui {
     $c.ActivarProteccion.Visibility = if ($g.Proteccion -eq 'activada') { 'Collapsed' } else { 'Visible' }
     $c.ActivarProteccion.IsEnabled = $libre -and !$g.Ocupado -and $g.Proteccion -in 'desactivada','desconocida'
     $c.Actualizar.Content = Format-AldiaCantidadGui $n 'seleccionada' 'seleccionadas' 'Actualizar {1} ({0})'
-    $c.Actualizar.IsEnabled = $libre -and !$g.Ocupado -and $n -gt 0
     $c.Reiniciar.IsEnabled = $libre -and !$g.Ocupado
     $c.Ajustes.IsEnabled = $libre -and !$g.Ocupado -and $g.ConfigLista
     $c.Fabricantes.IsEnabled = $libre -and !$g.Ocupado
+    $c.Inventario.IsEnabled = $c.Fijados.IsEnabled = $c.DetalleHistorial.IsEnabled = $libre -and !$g.Ocupado
+    $c.RevisarSalud.IsEnabled = $libre
+    $c.TarjetasSalud.IsEnabled = $libre -and !$g.Ocupado
+    $listaDisponible = $libre -or $g.Operacion -eq 'seguridad'
+    $c.Actualizar.IsEnabled = $listaDisponible -and !$g.Ocupado -and !$g.SiguienteOperacion -and $n -gt 0
     $c.Analizar.IsEnabled = $libre
-    $c.Todas.IsEnabled = $c.Ninguna.IsEnabled = $libre -and @($g.Modelo | Where-Object Habilitada).Count -gt 0
-    $c.Filas.IsEnabled = $libre
+    $c.Todas.IsEnabled = $c.Ninguna.IsEnabled = $listaDisponible -and @($g.Modelo | Where-Object Habilitada).Count -gt 0
+    $c.Filas.IsEnabled = $listaDisponible
 }
 
 function Open-AldiaUrlGui {
@@ -220,10 +233,15 @@ function Update-AldiaVistaFilaGui {
     $Vista.Estado.Text = $fila.Estado
     $Vista.Panel.ToolTip = if ($fila.Motivo) { $fila.Motivo }
     $tamano = if ($fila.Bytes -gt 0) { '{0:N1} MB' -f ($fila.Bytes / 1MB) }
-    $Vista.Detalle.Text = (@($fila.Detalle,$tamano,$fila.Motivo) | Where-Object { $_ }) -join ' · '
+    $marca = if ($fila.Riesgo) { 'Seguridad · ' + @('','Bajo','Medio','Alto','Crítico')[$fila.Riesgo] }
+    $Vista.Detalle.Text = (@($fila.Detalle,$tamano,$fila.Motivo,$marca) | Where-Object { $_ }) -join ' · '
     $fondo,$texto = Get-AldiaColoresEstadoGui $fila.Estado
     $Vista.Etiqueta.Background = $fondo
     $Vista.Estado.Foreground = $texto
+    if ($fila.Riesgo -ge 3 -and $fila.Estado -eq 'Pendiente') {
+        $Vista.Etiqueta.Background = if ($fila.Riesgo -eq 4) { '#FDE7E7' } else { '#FFF0D2' }
+        if ($fila.Riesgo -eq 4) { $Vista.Estado.Foreground = '#A52121' }
+    }
 }
 
 function Get-AldiaColoresEstadoGui {
@@ -245,10 +263,14 @@ function Show-AldiaFilasGui {
     $g.Modelo = @($Filas)
     $g.Vistas.Clear()
     $c.Filas.Children.Clear()
-    foreach ($fuente in 'pnp','drivers','windows','apps','npm') {
-        $grupo = @($Filas | Where-Object Fuente -eq $fuente)
+    foreach ($fuente in 'seguridad','pnp','drivers','windows','apps','npm') {
+        $grupo = if ($fuente -eq 'seguridad') {
+            @($Filas | Where-Object { $_.Riesgo -and $_.Habilitada } | Sort-Object Riesgo -Descending)
+        } else { @($Filas | Where-Object { $_.Fuente -eq $fuente -and !($_.Riesgo -and $_.Habilitada) }) }
+        $grupo = @($grupo | Where-Object { $_ })
         if (!$grupo.Count) { continue }
-        $titulo = New-AldiaTextoGui "$($grupo[0].Categoria) ($($grupo.Count))" -Negrita
+        $categoria = if ($fuente -eq 'seguridad') { 'Actualizaciones de seguridad' } else { $grupo[0].Categoria }
+        $titulo = New-AldiaTextoGui "$categoria ($($grupo.Count))" -Negrita
         $titulo.FontSize = 16
         $titulo.Margin = '0,8,0,4'
         $null = $c.Filas.Children.Add($titulo)
@@ -327,7 +349,8 @@ function Show-AldiaHerramientasGui {
     foreach ($aviso in $Datos.Gpu) {
         New-AldiaTarjetaGui $c.Gpu (New-AldiaTextoGui "$($aviso.Nombre) · $($aviso.Aviso)")
     }
-    $c.Inventario.ItemsSource = @(foreach ($p in $Datos.Inventario) { "$($p.Nombre) · $($p.Version)" })
+    Show-AldiaAdopcionesGui $Datos.Inventario $Datos.Adopciones
+    Show-AldiaFijadosGui $Datos.Config.fijados
     $c.Automatica.IsChecked = $Datos.Activa
     $c.Hora.Text = $Datos.Config.horaDiaria
     $c.FuenteWindows.IsChecked = $Datos.Config.fuentes.windows
@@ -364,8 +387,14 @@ function Receive-AldiaEventoGui {
             $c.EstadoProteccion.Text = "$estado en la unidad del sistema ($unidad)"
         }
         'aviso' { Add-AldiaAvisoGui $d }
-        'filas' { Show-AldiaFilasGui $d }
+        'filas' { $c.Seguridad.Children.Clear(); Show-AldiaFilasGui $d }
+        'seguridadEnCurso' { $g.Operacion = 'seguridad'; Update-AldiaControlesGui }
+        'seguridad' { Show-AldiaSeguridadGui $d }
+        'salud' { Show-AldiaSaludGui $d }
         'historial' { Show-AldiaHistorialGui $d }
+        'planesDeshacer' { if ($d.Seleccion -eq $g.SeleccionHistorial) { Show-AldiaDetalleHistorialGui $d.Planes } }
+        'fijados' { Show-AldiaFijadosGui $d }
+        'reinicioPendiente' { $c.BandaReinicio.Visibility = 'Visible' }
         'herramientas' { Show-AldiaHerramientasGui $d }
         'instalando' {
             $vista = $g.Vistas[$d.Clave]
@@ -424,6 +453,10 @@ function Update-AldiaVentanaGui {
             $siguiente = $g.SiguienteOperacion
             $g.SiguienteOperacion = $null
             Start-AldiaOperacionGui $siguiente.Nombre $siguiente.Datos
+        } elseif ($g.ConsultaHistorial) {
+            $consulta = $g.ConsultaHistorial
+            $g.ConsultaHistorial = $null
+            Start-AldiaOperacionGui consultarDeshacer $consulta
         }
     } elseif (!$g.Pendiente -and !$g.PreguntandoCierre -and !$g.Demo -and [datetime]::UtcNow -ge $g.ProximaConsulta) {
         Start-AldiaOperacionGui estado
@@ -434,6 +467,7 @@ function Connect-AldiaEventosGui {
     $g = $script:AldiaGui
     $c = $g.Controles
     $c.Analizar.Add_Click({ Start-AldiaOperacionGui analizar })
+    $c.RevisarSalud.Add_Click({ Start-AldiaOperacionGui salud })
     $c.Todas.Add_Click({ Set-AldiaSeleccionGui $true })
     $c.Ninguna.Add_Click({ Set-AldiaSeleccionGui $false })
     $c.Actualizar.Add_Click({
@@ -446,7 +480,9 @@ function Connect-AldiaEventosGui {
             Start-AldiaOperacionGui reiniciar
         }
     })
-    $c.ActivarProteccion.Add_Click({ Start-AldiaOperacionGui proteger })
+    $c.ActivarProteccion.Add_Click({
+        Start-AldiaAccionSaludGui @{ Id='restauracion' } proteger
+    })
     $c.Guardar.Add_Click({
         $c = $script:AldiaGui.Controles
         Start-AldiaOperacionGui guardar @{
@@ -455,19 +491,10 @@ function Connect-AldiaEventosGui {
                 apps=[bool]$c.FuenteApps.IsChecked; npm=[bool]$c.FuenteNpm.IsChecked }
         }
     })
-    $c.Historial.Add_SelectionChanged({
-        $c = $script:AldiaGui.Controles
-        $c.DetalleHistorial.ItemsSource = @(foreach ($r in $c.Historial.SelectedItem.Resultados) {
-            $estado = if ($r.Estado -eq 'actualizado' -and $r.RequiereReinicio) { 'Necesita reinicio' }
-                else { $script:AldiaEstadosGui[[string]$r.Estado] }
-            $fondo,$color = Get-AldiaColoresEstadoGui $estado
-            [pscustomobject]@{
-                Nombre=if ($r.Titulo) { $r.Titulo } else { $r.Id }
-                Estado=if ($estado) { $estado } else { $r.Estado }
-                Color=$color
-                Mensaje=$r.Mensaje
-            }
-        })
+    $c.Historial.Add_SelectionChanged({ Request-AldiaDetalleHistorialGui })
+    $c.DetalleHistorial.AddHandler([Windows.Controls.Button]::ClickEvent, [Windows.RoutedEventHandler]{
+        param($sender,$e)
+        if ($e.Source -is [Windows.Controls.Button] -and $e.Source.Tag) { Invoke-AldiaBotonHistorialGui $e.Source }
     })
     $g.Ventana.Add_Closing({
         param($sender,$e)
@@ -475,7 +502,7 @@ function Connect-AldiaEventosGui {
         if ($g.Pendiente) {
             $e.Cancel = $true
             $g.SiguienteOperacion = $null
-            if ($g.Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger') {
+            if ($g.Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger','accionSalud','adoptar','deshacer','desfijar') {
                 $g.PreguntandoCierre = $true
                 try {
                     if ([Windows.MessageBox]::Show($g.Ventana,'Hay una operación en curso. ¿Cerrar la ventana cuando termine?','Al Día','YesNo','Question','No') -ne 'Yes') { return }
@@ -504,8 +531,8 @@ function Initialize-AldiaGui {
         Ventana=$ventana; Controles=$controles; Pipeline=$pipeline
         Manifiesto=Join-Path (Split-Path $PSScriptRoot) 'Aldia.psd1'
         Cola=[Collections.Concurrent.ConcurrentQueue[object]]::new()
-        Estado=@{ ConfigDemo=$null; ActivaDemo=$true; HistorialDemo=@(); ProteccionDemo=$false }
-        Demo=[bool]$Demo; Modelo=@(); Vistas=@{}; ConfigLista=$false
+        SeleccionHistorial=$null; ConsultaHistorial=$null; Estado=@{ ConfigDemo=$null; ActivaDemo=$true; HistorialDemo=@(); ProteccionDemo=$false; CambiosSaludDemo=@{} }
+        Demo=[bool]$Demo; Modelo=@(); Vistas=@{}; ConfigLista=$false; ResultadosSalud=@{}
     }
     if ($Demo) { $controles.Demo.Visibility = 'Visible' }
     Connect-AldiaEventosGui

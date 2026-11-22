@@ -1,0 +1,77 @@
+[
+  {
+    "id": "Wibu-Systems.CodeMeterRuntimeKit",
+    "nombre": "CodeMeter",
+    "cpe": "wibu:codemeter_runtime"
+  },
+  {
+    "id": "VMware.Workstation",
+    "nombre": "VMware Workstation",
+    "cpe": "vmware:workstation"
+  },
+  {
+    "id": "OpenJS.NodeJS*",
+    "nombre": "^Node\\.js",
+    "cpe": "nodejs:node.js"
+  },
+  {
+    "id": "Google.Chrome",
+    "nombre": "^Google Chrome",
+    "cpe": "google:chrome"
+  },
+  {
+    "id": "PortSwigger.BurpSuite*",
+    "nombre": null,
+    "cpe": "portswigger:burp_suite"
+  },
+  {
+    "id": "Microsoft.VisualStudioCode",
+    "nombre": null,
+    "cpe": "microsoft:visual_studio_code"
+  },
+  {
+    "id": "Python.Python.*",
+    "nombre": "^Python \\d",
+    "cpe": "python:python"
+  },
+  {
+    "id": null,
+    "nombre": "^Npcap",
+    "cpe": "nmap:npcap"
+  },
+  {
+    "id": "Brave.Brave",
+    "nombre": "^Brave",
+    "cpe": "brave:brave"
+  },
+  {
+    "id": "Oracle.VirtualBox",
+    "nombre": "VirtualBox",
+    "cpe": "oracle:vm_virtualbox"
+  },
+  {
+    "id": "TeamViewer.TeamViewer",
+    "nombre": "^TeamViewer\\b",
+    "cpe": "teamviewer:teamviewer"
+  },
+  {
+    "id": "Discord.Discord",
+    "nombre": "^Discord$",
+    "cpe": "discord:discord"
+  },
+  {
+    "id": "Git.Git",
+    "nombre": "^Git\\b",
+    "cpe": "git-scm:git"
+  },
+  {
+    "id": "Microsoft.Teams",
+    "nombre": null,
+    "cpe": "microsoft:teams"
+  },
+  {
+    "id": "WiresharkFoundation.Wireshark",
+    "nombre": "^Wireshark\\b",
+    "cpe": "wireshark:wireshark"
+  }
+]

@@ -1,11 +1,11 @@
 ﻿function ConvertFrom-AldiaWinget {
-    param([string]$Texto, [switch]$Inventario)
+    param([string]$Texto, [switch]$Inventario, [switch]$ListaCompleta, [switch]$Busqueda)
     $lineas = @($Texto -split '\r?\n' | ForEach-Object { ($_ -split '\r')[-1] })
     $tabla = 0
     for ($i = 1; $i -lt $lineas.Count; $i++) {
         if ($lineas[$i] -notmatch '^-{10,}\s*$') { continue }
         $pos = @([regex]::Matches($lineas[$i-1], '\S+') | ForEach-Object { $_.Index })
-        if ($pos.Count -lt 3 -or (!$Inventario -and $pos.Count -lt 4)) { continue }
+        if ($pos.Count -lt 3 -or (!$Busqueda -and !$Inventario -and !$ListaCompleta -and $pos.Count -lt 4)) { continue }
         $tabla++
         for ($i++; $i -lt $lineas.Count; $i++) {
             $fila = $lineas[$i]
@@ -18,10 +18,27 @@
             })
             $nombre = $campos[0]; $id = $campos[1]; $version = $campos[2]
             $disponible = $campos[3]; $origen = $campos[4]
-            if ($Inventario) {
-                if ($pos.Count -eq 4) { $origen = $campos[3] }
+            if ($Busqueda) {
                 $disponible = $null
-                if ($id -notmatch '^ARP\\' -or $id -match '\\Steam App \d+$') { continue }
+                $origen = if ($fila -match '\s(winget|msstore)\s*$') { $Matches[1] }
+                if ($fila -match '^(?<nombre>.+?)\s+(?<id>[A-Za-z0-9][A-Za-z0-9._+-]*\.[A-Za-z0-9._+-]+)\s+(?<version>\S+)') {
+                    $nombre = $Matches.nombre; $id = $Matches.id; $version = $Matches.version
+                }
+            } elseif ($Inventario -or $ListaCompleta) {
+                $disponible = $null
+                $origen = if ($fila -match '\s(winget|msstore)\s*$') { $Matches[1] }
+                $sinOrigen = $fila -replace '\s+(?:winget|msstore)\s*$',''
+                $m = [regex]::Match($sinOrigen, '^(?<nombre>.+?)\s+(?<id>(?:ARP|MSIX)\\.+?)\s{2,}(?<version>(?:[<>]=?\s+)?\S+)(?:\s+(?<disponible>\S+))?\s*$')
+                if (!$m.Success) {
+                    $m = [regex]::Match($sinOrigen, '^(?<nombre>.+?)\s+(?<id>\S*[A-Za-z][.\\]\S+)\s+(?<version>(?:[<>]=?\s+)?\S+)(?:\s+(?<disponible>\S+))?\s*$')
+                }
+                if ($m.Success) {
+                    $nombre = $m.Groups['nombre'].Value.Trim()
+                    $id = $m.Groups['id'].Value
+                    $version = $m.Groups['version'].Value
+                    $disponible = $m.Groups['disponible'].Value
+                } elseif (!$id -or !$nombre -or $version -in 'winget','msstore') { continue }
+                if ($Inventario -and ($id -notmatch '^ARP\\' -or $id -match '\\Steam App \d+$')) { continue }
             } else {
                 $camposDerecha = '(?<id>\S+)\s+(?<version>(?:[<>]=?\s+)?\S+)\s+(?<disponible>\S+)'
                 $m = [regex]::Match($fila, '^(?<nombre>.+?)\s{2,}(?<id>\S+)\s{2,}(?<version>(?:[<>]=?\s+)?\S+)\s{2,}(?<disponible>\S+)(?:\s+(?<origen>\S+))?\s*$')
@@ -37,7 +54,7 @@
                     $origen = $m.Groups['origen'].Value
                 }
             }
-            if (!$Inventario -and $id -notmatch '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') {
+            if (!$Inventario -and !$ListaCompleta -and $id -notmatch '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') {
                 Write-AldiaLog "Se descartó un Id de winget inválido: $id"
                 continue
             }
@@ -51,20 +68,20 @@
 }
 
 function Get-AldiaApps {
-    param($Config, [switch]$Inventario)
+    param($Config, [switch]$Inventario, [switch]$ListaCompleta)
     if (!(Get-Command winget.exe -CommandType Application -ErrorAction SilentlyContinue)) {
         Write-AldiaLog 'winget no está disponible.'
         return
     }
     [Console]::OutputEncoding = [Text.Encoding]::UTF8
     $opciones = @('upgrade','--accept-source-agreements','--disable-interactivity')
-    if ($Inventario) { $opciones[0] = 'list' }
+    if ($Inventario -or $ListaCompleta) { $opciones[0] = 'list' }
     elseif ($Config.incluirVersionDesconocida) { $opciones += '--include-unknown' }
     $r = Invoke-AldiaComando winget.exe $opciones
     $hex = '0x{0:X8}' -f ([long]$r.Codigo -band 4294967295L)
     if ($hex -eq '0x8A150014' -or (!$r.Timeout -and $r.Salida -match 'No installed package found matching input criteria|No se encontr.+paquete instalado')) { return }
     if ($r.Timeout -or $r.Codigo -ne 0) { throw "No se pudo consultar winget ($hex). $($r.Error)" }
-    ConvertFrom-AldiaWinget $r.Salida -Inventario:$Inventario
+    ConvertFrom-AldiaWinget $r.Salida -Inventario:$Inventario -ListaCompleta:$ListaCompleta
 }
 
 function ConvertTo-AldiaEstadoWinget {
@@ -87,7 +104,7 @@ function ConvertTo-AldiaEstadoWinget {
 function Get-AldiaOrdenApps {
     param($Paquetes, $Config)
     $Paquetes | Where-Object {
-        !$_.Explicito -and $_.Id -notin $Config.excluir -and ($Config.incluirVersionDesconocida -or !$_.VersionDesconocida)
+        !$_.Explicito -and $_.Id -notin $Config.excluir -and !(Test-AldiaFijado $Config apps $_.Id) -and ($Config.incluirVersionDesconocida -or !$_.VersionDesconocida)
     } | Sort-Object @{Expression = { [int]($_.Id -ieq 'Microsoft.AppInstaller') }}
 }
 

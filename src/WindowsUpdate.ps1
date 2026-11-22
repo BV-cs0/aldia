@@ -62,5 +62,12 @@ function Update-AldiaWUItem {
 function Update-AldiaWindows {
     param($Config, [switch]$Simular)
     $sesion = New-AldiaSesionWU
-    Update-AldiaWU $sesion @(Find-AldiaActualizacionesWU $sesion Software) windows -Simular:$Simular
+    $pendientes = @(Find-AldiaActualizacionesWU $sesion Software | Where-Object { !(Test-AldiaWUFijada $Config $_) })
+    Update-AldiaWU $sesion $pendientes windows -Simular:$Simular
+}
+
+function Test-AldiaWUFijada {
+    param($Config, $Actualizacion)
+    $kb = @($Actualizacion.KBArticleIDs | ForEach-Object { if ($_){ "KB$_" } })
+    Test-AldiaFijado $Config windows $Actualizacion.Identity.UpdateID $kb
 }

@@ -1,0 +1,208 @@
+Nombre                                                         Id                                                                                    Versión              Disponible  Origen
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Programa de ejemplo 001                                        ARP\Machine\X64\App001                                                                26.08.26.01                      
+Programa de ejemplo 002                                        Ejemplo.Programa002                                                                   2026.2.2.9           2026.2.2.10 winget
+Programa de ejemplo 003                                        ARP\Machine\X64\Ejemplo.App003                                                        Unknown                          
+Programa de ejemplo 004                                        MSIX\Ejemplo.Programa004                                                              1.398.9.0                        
+Programa de ejemplo 005                                        Ejemplo.Programa005                                                                   19.4.0.10                        winget
+Programa de ejemplo 006                                        MSIX\Ejemplo.Programa006                                                              2.0.35.0                         
+Programa de ejemplo 007                                        ARP\Machine\X86\Ejemplo.App007                                                        Unknown                          
+Programa de ejemplo 008                                        Ejemplo.App008                                                                        4.23.1                           winget
+Programa de ejemplo 009                                        MSIX\Ejemplo.Programa009                                                              2.0.35.0                         
+Programa de ejemplo 010                                        Ejemplo.App010                                                                        11.92.201                        winget
+Programa de ejemplo 011                                        MSIX\Ejemplo.Programa011                                                              11.2609.11.0                     
+Programa de ejemplo 012                                        ARP\Machine\X64\Ejemplo.App012                                                        Unknown                          
+Programa de ejemplo 013                                        App013                                                                                3.1.0.1                          winget
+Programa de ejemplo 014                                        ARP\Machine\X86\Ejemplo.Programa014                                                   158.1.100.58                     
+Programa de ejemplo 015                                        Ejemplo.Programa015                                                                   2026.11.2                        winget
+Programa de ejemplo 016                                        MSIX\Ejemplo.Programa016                                                              11.2607.0.0                      
+Programa de ejemplo 017                                        Ejemplo.App017                                                                        1.128.0                          msstore
+Programa de ejemplo 018                                        MSIX\Ejemplo.Programa018                                                              1.100.5688.0                     
+Programa de ejemplo 019                                        MSIX\Ejemplo.Programa019                                                              2.2609.102.0                     
+Programa de ejemplo 020                                        MSIX\Ejemplo.Programa020                                                              1.2026.190.0                     
+Programa de ejemplo 021                                        MSIX\Ejemplo.Programa021                                                              6.28899.2.0                      
+Programa de ejemplo 022                                        Ejemplo.Programa022                                                                   9.10.8178.501                    winget
+Copilot                                                        ARP\Machine\X86\Microsoft Copilot                                                     158.0.4370.33                    
+Copilot                                                        Microsoft.365Copilot                                                                  158.0.4370.33                    winget
+Programa de ejemplo 023                                        MSIX\Ejemplo.Programa023                                                              2026.2608.1.0                    
+Programa de ejemplo 024                                        Ejemplo.Programa024                                                                   3.13.1                           winget
+Programa de ejemplo 025                                        ARP\Machine\X64\Ejemplo.App025                                                        Unknown                          
+Programa de ejemplo 026                                        ARP\User\X64\App026                                                                   1.0.9269                         
+Programa de ejemplo 027                                        MSIX\Ejemplo.Programa027                                                              1.26101.77.0                     
+Programa de ejemplo 028                                        Ejemplo.App028                                                                        2.3.1.1000                       winget
+Programa de ejemplo 029                                        MSIX\Ejemplo.Programa029                                                              3.27.12250.0                     
+Programa de ejemplo 030                                        MSIX\Ejemplo.Programa030                                                              1.2.591.0                        
+Programa de ejemplo 031                                        Ejemplo.Programa031                                                                   11.0.33.10                       winget
+Programa de ejemplo 032                                        MSIX\Ejemplo.Programa032                                                              1.26101.118.0                    
+Programa de ejemplo 033                                        Ejemplo.Programa033                                                                   1.3.210.0                        winget
+Programa de ejemplo 034                                        Ejemplo.Programa034                                                                   5.6.0                            winget
+Programa de ejemplo 035                                        ARP\Machine\X86\Ejemplo.Programa035                                                   16.0.1000.6                      
+Programa de ejemplo 036                                        MSIX\Ejemplo.Programa036                                                              2.1.51.0                         
+Programa de ejemplo 037                                        MSIX\Ejemplo.Programa037                                                              2.5.48.0                         
+Programa de ejemplo 038                                        MSIX\Ejemplo.Programa038                                                              1.2.20.0                         
+Programa de ejemplo 039                                        MSIX\Ejemplo.Programa039                                                              2.5.42.0                         
+Programa de ejemplo 040                                        MSIX\Ejemplo.Programa040                                                              1.2.47.0                         
+Programa de ejemplo 041                                        MSIX\Ejemplo.Programa041                                                              1.2.65.0                         
+Programa de ejemplo 042                                        MSIX\Ejemplo.Programa042                                                              1.1.57.0                         
+Programa de ejemplo 043                                        MSIX\Ejemplo.Programa043                                                              1.2.32.0                         
+Programa de ejemplo 044                                        ARP\Machine\X64\Ejemplo.Programa044                                                   8.3.0.27                         
+Programa de ejemplo 045                                        MSIX\Ejemplo.Programa045                                                              2026.11090.22001.0               
+Programa de ejemplo 046                                        MSIX\Ejemplo.Programa046                                                              7.326.11042.0                    
+Programa de ejemplo 047                                        MSIX\Ejemplo.Programa047                                                              1.117.15001.0                    
+Programa de ejemplo 048                                        ARP\Machine\X64\Ejemplo.App048                                                        26.06.25.01                      
+Programa de ejemplo 049                                        ARP\Machine\X64\App049                                                                26.07.22.01                      
+Programa de ejemplo 050                                        ARP\Machine\X64\App050                                                                26.09.07.01                      
+Programa de ejemplo 051                                        ARP\Machine\X64\Ejemplo.Programa051                                                   26.06.24.01                      
+Programa de ejemplo 052                                        ARP\Machine\X64\Ejemplo.App052                                                        26.06.17.02                      
+Programa de ejemplo 053                                        ARP\Machine\X64\Ejemplo.App053                                                        25.12.03.01                      
+Programa de ejemplo 054                                        MSIX\Ejemplo.Programa054                                                              1.0.45.0                         
+Programa de ejemplo 055                                        ARP\Machine\X64\Ejemplo.Programa055                                                   26.06.29.01                      
+Programa de ejemplo 056                                        ARP\Machine\X64\App056                                                                26.09.08.01                      
+Programa de ejemplo 057                                        MSIX\Ejemplo.Programa057                                                              26.904.1.0                       
+Programa de ejemplo 058                                        ARP\Machine\X64\Ejemplo.App058                                                        26.08.28.01                      
+Programa de ejemplo 059                                        ARP\Machine\X64\App059                                                                26.5.27.1                        
+Programa de ejemplo 060                                        ARP\Machine\X64\Ejemplo.Programa060                                                   26.415.1                         
+Programa de ejemplo 061                                        ARP\Machine\X64\Ejemplo.Programa061                                                   26.204.1                         
+Git                                                            Git.Git                                                                               2.56.1                           winget
+Programa de ejemplo 062                                        ARP\User\X64\Ejemplo.Programa062                                                      1.0                              
+Programa de ejemplo 063                                        App063                                                                                2.105.0                          winget
+Programa de ejemplo 064                                        Ejemplo.Programa064                                                                   3.7.0                            winget
+Programa de ejemplo 065                                        ARP\Machine\X86\App065                                                                157.0.8103.79                    
+Programa de ejemplo 066                                        MSIX\Ejemplo.Programa066                                                              1.1.127.0                        
+Programa de ejemplo 067                                        MSIX\Ejemplo.Programa067                                                              11.2609.15.0                     
+Programa de ejemplo 068                                        ARP\User\X64\Ejemplo.Programa068                                                      3.4.0                            
+Programa de ejemplo 069                                        MSIX\Ejemplo.Programa069                                                              22609.1401.1.0                   
+Programa de ejemplo 070                                        MSIX\Ejemplo.Programa070                                                              0.1700.597.0                     
+Programa de ejemplo 071                                        MSIX\Ejemplo.Programa071                                                              0.1377.316.0                     
+Programa de ejemplo 072                                        MSIX\Ejemplo.Programa072                                                              0.1377.316.0                     
+Programa de ejemplo 073                                        MSIX\Ejemplo.Programa073                                                              0.1377.316.0                     
+Programa de ejemplo 074                                        MSIX\Ejemplo.Programa074                                                              0.1377.316.0                     
+Programa de ejemplo 075                                        Ejemplo.Programa075                                                                   1.29.380.0                       winget
+Programa de ejemplo 076                                        MSIX\Ejemplo.Programa076                                                              12139.12003.62022.0              
+Programa de ejemplo 077                                        App077                                                                                1.5.7                            winget
+Programa de ejemplo 078                                        MSIX\Ejemplo.Programa078                                                              1.2511.9.0                       
+Programa de ejemplo 079                                        App079                                                                                1.115.0                          winget
+Programa de ejemplo 080                                        MSIX\Ejemplo.Programa080                                                              2.2.29512.0                      
+Programa de ejemplo 081                                        MSIX\Ejemplo.Programa081                                                              2.2.29512.0                      
+Programa de ejemplo 082                                        Ejemplo.Programa082                                                                   2.2.28604.0                      winget
+Programa de ejemplo 083                                        Ejemplo.Programa083                                                                   2.2.28604.0                      winget
+Programa de ejemplo 084                                        Ejemplo.Programa084                                                                   10.0.404                         winget
+Programa de ejemplo 085                                        MSIX\Ejemplo.Programa085                                                              1.2.162.0                        
+Programa de ejemplo 086                                        MSIX\Ejemplo.Programa086                                                              4.7.10220.0                      
+Programa de ejemplo 087                                        Ejemplo.App087                                                                        158.0.4370.33                    winget
+Programa de ejemplo 088                                        MSIX\Ejemplo.Programa088                                                              153.0.4234.32                    
+Programa de ejemplo 089                                        MSIX\Ejemplo.Programa089                                                              10.0.23012.0                     
+Programa de ejemplo 090                                        MSIX\Ejemplo.Programa090                                                              10.0.23012.0                     
+Programa de ejemplo 091                                        Ejemplo.Programa091                                                                   10.1.26100.6879                  winget
+Programa de ejemplo 092                                        MSIX\Ejemplo.Programa092                                                              0.1377.316.0                     
+Programa de ejemplo 093                                        MSIX\Ejemplo.Programa093                                                              0.1377.316.0                     
+Programa de ejemplo 094                                        MSIX\Ejemplo.Programa094                                                              1.0.2.0                          
+Programa de ejemplo 095                                        Ejemplo.Programa095                                                                   17.11.1.1                        winget
+Programa de ejemplo 096                                        Ejemplo.Programa096                                                                   18.7.6.0                         winget
+Programa de ejemplo 097                                        ARP\Machine\X64\Ejemplo.Programa097                                                   Unknown                          
+Programa de ejemplo 098                                        MSIX\Ejemplo.Programa098                                                              22610.1401.10.0                  
+Programa de ejemplo 099                                        Ejemplo.App099                                                                        26288.2004.5269.3420             winget
+Programa de ejemplo 100                                        MSIX\Ejemplo.Programa100                                                              0.179.8901.0                     
+Microsoft Visual C++ 2008 Redistributable - x64 9.0.30729.6161 Microsoft.VCRedist.2008.x64                                                           9.0.30729.6161                   winget
+Microsoft Visual C++ 2008 Redistributable - x86 9.0.30729.6161 Microsoft.VCRedist.2008.x86                                                           9.0.30729.6161                   winget
+Microsoft Visual C++ 2010  x64 Redistributable - 10.0.40219    Microsoft.VCRedist.2010.x64                                                           10.0.40219                       winget
+Microsoft Visual C++ 2010  x86 Redistributable - 10.0.40219    Microsoft.VCRedist.2010.x86                                                           10.0.40219                       winget
+Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664   Microsoft.VCRedist.2013.x64                                                           12.0.40664.0                     winget
+Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.40664   Microsoft.VCRedist.2013.x86                                                           12.0.40664.0                     winget
+Microsoft Visual C++ 2015 UWP Desktop Runtime Package          Microsoft.VCLibs.Desktop.14                                                           14.0.33728.0                     winget
+Microsoft Visual C++ 2015 UWP Desktop Runtime Package          Microsoft.VCLibs.Desktop.14                                                           14.0.33728.0                     winget
+Microsoft Visual C++ 2015 UWP Runtime Package                  Microsoft.VCLibs.14                                                                   14.0.33519.0                     winget
+Microsoft Visual C++ 2015 UWP Runtime Package                  Microsoft.VCLibs.14                                                                   14.0.33519.0                     winget
+Microsoft Visual C++ v14 Redistributable (x64) - 14.52.37029   Microsoft.VCRedist.2015+.x64                                                          14.52.37029.0                    winget
+Microsoft Visual C++ v14 Redistributable (x86) - 14.52.37029   Microsoft.VCRedist.2015+.x86                                                          14.52.37029.0                    winget
+Programa de ejemplo 101                                        Ejemplo.Programa101                                                                   1.146.0                          winget
+Programa de ejemplo 102                                        ARP\Machine\X64\Ejemplo.Programa102                                                   4.11.24.2075                     
+Programa de ejemplo 103                                        ARP\Machine\X64\Ejemplo.Programa103                                                   16.0.1000.6                      
+Programa de ejemplo 104                                        ARP\Machine\X64\Ejemplo.Programa104                                                   Unknown                          
+Programa de ejemplo 105                                        Ejemplo.Programa105                                                                   8.0.34                           winget
+Programa de ejemplo 106                                        Ejemplo.Programa106                                                                   9.0.23                           winget
+Programa de ejemplo 107                                        Ejemplo.Programa107                                                                   10.0.15                          winget
+Programa de ejemplo 108                                        Ejemplo.Programa108                                                                   8.2511.26001.0                   winget
+Programa de ejemplo 109                                        Ejemplo.Programa109                                                                   8.2501.31001.0                   winget
+Programa de ejemplo 110                                        ARP\Machine\X64\Ejemplo.App110                                                        Unknown                          
+Programa de ejemplo 111                                        MSIX\Ejemplo.Programa111                                                              26.11050.10200.0                 
+Programa de ejemplo 112                                        MSIX\Ejemplo.Programa112                                                              4.54.63045.0                     
+Programa de ejemplo 113                                        ARP\User\X64\Ejemplo.Programa113                                                      Unknown                          
+Programa de ejemplo 114                                        App114                                                                                7.992                            winget
+Node.js                                                        ARP\Machine\X64\{0E9336F1-39D0-431C-9797-A58ED2305D58}                                24.22.2                          
+Programa de ejemplo 115                                        MSIX\Ejemplo.Programa115                                                              4.0.6105.0                       
+Programa de ejemplo 116                                        ARP\Machine\X86\App116                                                                1.89                             
+Programa de ejemplo 117                                        ARP\Machine\X64\Ejemplo.Programa117                                                   11.0.9.585                       
+Programa de ejemplo 118                                        MSIX\Ejemplo.Programa118                                                              8.1.969.0                        
+Programa de ejemplo 119                                        ARP\Machine\X64\Ejemplo.Programa119                                                   1.4.6.6                          
+Programa de ejemplo 120                                        ARP\Machine\X64\Ejemplo.Programa120                                                   621.24                           
+Programa de ejemplo 121                                        ARP\Machine\X64\Ejemplo.Programa121                                                   1.9.12728.38614306               
+Programa de ejemplo 122                                        App122                                                                                9.26.0904                        winget
+Programa de ejemplo 123                                        ARP\Machine\X64\Ejemplo.Programa123                                                   1.52.831.832                     
+Programa de ejemplo 124                                        MSIX\Ejemplo.Programa124                                                              10.2409.42652.0                  
+Programa de ejemplo 125                                        MSIX\Ejemplo.Programa125                                                              25087.506.1.0                    
+Programa de ejemplo 126                                        Ejemplo.Programa126                                                                   2.3.2                            winget
+Programa de ejemplo 127                                        Ejemplo.App127                                                                        7.2.22                           winget
+Programa de ejemplo 128                                        Ejemplo.App128                                                                        3.3.1000.0                       winget
+Programa de ejemplo 129                                        Ejemplo.App129                                                                        1.2026.1013.100                  winget
+Programa de ejemplo 130                                        MSIX\Ejemplo.Programa130                                                              11.2609.441.0                    
+Programa de ejemplo 131                                        MSIX\Ejemplo.Programa131                                                              26100.176.275.0                  
+Programa de ejemplo 132                                        ARP\Machine\X64\Ejemplo.App132                                                        Unknown                          
+Programa de ejemplo 133                                        MSIX\Ejemplo.Programa133                                                              1.0.2164.0                       
+Programa de ejemplo 134                                        ARP\Machine\X64\Ejemplo.Programa134                                                   16.0.1000.6                      
+Programa de ejemplo 135                                        Ejemplo.App135                                                                        3.10.11                          winget
+Programa de ejemplo 136                                        Ejemplo.App136                                                                        > 3.10.11                        winget
+Programa de ejemplo 137                                        Ejemplo.Programa137                                                                   26.4.240.0                       winget
+Programa de ejemplo 138                                        Ejemplo.App138                                                                        3.15.2                           winget
+Programa de ejemplo 139                                        Ejemplo.App139                                                                        < 3.10.8                         winget
+Programa de ejemplo 140                                        ARP\Machine\X64\Ejemplo.App140                                                        Unknown                          
+Programa de ejemplo 141                                        MSIX\Ejemplo.Programa141                                                              1.1.137.0                        
+Programa de ejemplo 142                                        MSIX\Ejemplo.Programa142                                                              1.1.192.0                        
+Programa de ejemplo 143                                        MSIX\Ejemplo.Programa143                                                              11.2609.11.0                     
+Programa de ejemplo 144                                        ARP\User\X64\Ejemplo.Programa144                                                      Unknown                          
+Programa de ejemplo 145                                        ARP\Machine\X64\App145                                                                Unknown                          
+Programa de ejemplo 146                                        MSIX\Ejemplo.Programa146                                                              4.16.2445.0                      
+Programa de ejemplo 147                                        MSIX\Ejemplo.Programa147                                                              1000.29680.1000.0                
+Programa de ejemplo 148                                        ARP\Machine\X64\Ejemplo.App148                                                        Unknown                          
+Programa de ejemplo 149                                        MSIX\Ejemplo.Programa149                                                              4.27.9181.0                      
+Programa de ejemplo 150                                        ARP\Machine\X64\Ejemplo.App150                                                        Unknown                          
+Programa de ejemplo 151                                        MSIX\Ejemplo.Programa151                                                              1.0.14.0                         
+Programa de ejemplo 152                                        App152                                                                                2.10.91.91                       winget
+Programa de ejemplo 153                                        ARP\Machine\X64\Ejemplo.App153                                                        Unknown                          
+Programa de ejemplo 154                                        Ejemplo.Programa154                                                                   15.83.7                          winget
+Programa de ejemplo 155                                        Ejemplo.Programa155                                                                   1.25.3131.0                      winget
+Programa de ejemplo 156                                        ARP\Machine\X64\Ejemplo.App156                                                        Unknown                          
+Programa de ejemplo 157                                        Ejemplo.App157                                                                        0.76.2                           winget
+Programa de ejemplo 158                                        Ejemplo.App158                                                                        175.2.0.13423                    winget
+Programa de ejemplo 159                                        Ejemplo.App159                                                                        6000.3.28f1                      winget
+Programa de ejemplo 160                                        Ejemplo.App160                                                                        > 4.0.1.65535                    winget
+Programa de ejemplo 161                                        ARP\Machine\X64\Ejemplo.App161                                                        Unknown                          
+Programa de ejemplo 162                                        ARP\User\X64\Ejemplo.Programa162                                                      Unknown                          
+Programa de ejemplo 163                                        MSIX\Ejemplo.Programa163                                                              1.0.146.0                        
+Programa de ejemplo 164                                        ARP\Machine\X64\Ejemplo.Programa164                                                   26.0.1                           
+Programa de ejemplo 165                                        ARP\Machine\X86\Ejemplo.Programa165                                                   17.7.40001                       
+Programa de ejemplo 166                                        ARP\Machine\X64\Ejemplo.App166                                                        Unknown                          
+Programa de ejemplo 167                                        ARP\User\X64\A167                                                                     12.68.0                          
+Programa de ejemplo 168                                        MSIX\Ejemplo.Programa168                                                              1.6.19.0                         
+Programa de ejemplo 169                                        MSIX\Ejemplo.Programa169                                                              8000.994.2142.0                  
+Programa de ejemplo 170                                        MSIX\Ejemplo.Programa170                                                              8002.6.5.0                       
+Programa de ejemplo 171                                        MSIX\Ejemplo.Programa171                                                              2026.1122.1528.5                 
+Programa de ejemplo 172                                        Ejemplo.Programa172                                                                   10.0.26100.7705                  winget
+Programa de ejemplo 173                                        MSIX\Ejemplo.Programa173                                                              526.28801.60.0                   
+Programa de ejemplo 174                                        Ejemplo.Programa174                                                                   1.6.9                            winget
+Programa de ejemplo 175                                        Ejemplo.Programa175                                                                   1.6.9                            winget
+Programa de ejemplo 176                                        Ejemplo.Programa176                                                                   1.7.9                            winget
+Programa de ejemplo 177                                        Ejemplo.Programa177                                                                   1.7.9                            winget
+Programa de ejemplo 178                                        Ejemplo.Programa178                                                                   > 1.8.10                         winget
+Programa de ejemplo 179                                        Ejemplo.Programa179                                                                   > 1.8.10                         winget
+Programa de ejemplo 180                                        Ejemplo.Programa180                                                                   2.7.0.0                          winget
+Programa de ejemplo 181                                        Ejemplo.Programa181                                                                   2.7.0.0                          winget
+Programa de ejemplo 182                                        Ejemplo.Programa182                                                                   2.6.5.0                          winget
+Programa de ejemplo 183                                        Ejemplo.Programa183                                                                   2.6.4.0                          winget
+Programa de ejemplo 184                                        Ejemplo.Programa184                                                                   2.5.1.0                          winget
+Programa de ejemplo 185                                        Ejemplo.Programa185                                                                   2.4.0.0                          winget
+Programa de ejemplo 186                                        ARP\Machine\X86\App186                                                                Unknown                          
+Programa de ejemplo 187                                        Ejemplo.Programa187                                                                   1.1.1                            winget
+Programa de ejemplo 188                                        MSIX\Ejemplo.Programa188                                                              2612.1001.25.0                   
+Programa de ejemplo 189                                        MSIX\Ejemplo.Programa189                                                              12.130.16001.0                   
+Programa de ejemplo 190                                        MSIX\Ejemplo.Programa190                                                              1.24.10001.0                     

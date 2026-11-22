@@ -27,7 +27,7 @@ function Update-AldiaNpm {
     $ejecutable = Get-AldiaNpmEjecutable
     if (!$ejecutable) { return }
     foreach ($p in Get-AldiaNpm $ejecutable) {
-        if ($p.Id -in $Config.excluir) { continue }
+        if ($p.Id -in $Config.excluir -or (Test-AldiaFijado $Config npm $p.Id)) { continue }
         Update-AldiaNpmItem $Config $p $ejecutable -Simular:$Simular
     }
 }

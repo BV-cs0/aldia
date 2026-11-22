@@ -9,7 +9,7 @@ function Invoke-AldiaComando {
         [Parameter(Mandatory)][string]$Ejecutable,
         [string[]]$Argumentos,
         [ValidateRange(1,2147483)][int]$Timeout = 120,
-        [switch]$Simular, [switch]$Elevar, [switch]$Visible
+        [switch]$Simular, [switch]$Elevar, [switch]$Visible, [switch]$Oculto
     )
     $linea = ($Argumentos | ForEach-Object { ConvertTo-AldiaArgumento $_ }) -join ' '
     if ($Simular) {
@@ -36,12 +36,15 @@ function Invoke-AldiaComando {
         $info.StandardOutputEncoding = [Text.Encoding]::UTF8
         $info.StandardErrorEncoding = [Text.Encoding]::UTF8
     }
-    $proceso = if ($Elevar) {
-        Start-Process -FilePath $Ejecutable -ArgumentList $linea -Verb RunAs -PassThru -ErrorAction Stop
+    $proceso = if ($Elevar -or $Oculto) {
+        $opciones = @{}
+        if ($Elevar) { $opciones.Verb = 'RunAs' }
+        if ($Oculto) { $opciones.WindowStyle = 'Hidden' }
+        Start-Process -FilePath $Ejecutable -ArgumentList $linea @opciones -PassThru -ErrorAction Stop
     } else { [Diagnostics.Process]::Start($info) }
     try {
-        if ($Elevar) { $null = $proceso.Handle }
-        if ($Visible) { return [pscustomobject]@{ Codigo = 0; Salida = ''; Error = ''; Timeout = $false } }
+        if ($Elevar -or $Oculto) { $null = $proceso.Handle }
+        if ($Visible -or $Oculto) { return [pscustomobject]@{ Codigo = 0; Salida = ''; Error = ''; Timeout = $false } }
         if (!$info.UseShellExecute) {
             $salida = $proceso.StandardOutput.ReadToEndAsync()
             $errores = $proceso.StandardError.ReadToEndAsync()

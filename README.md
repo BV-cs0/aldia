@@ -45,3 +45,19 @@ Los logs están en %ProgramData%\Aldia\logs y el historial en %ProgramData%\Aldi
 ## Pruebas
 
 En Windows PowerShell 5.1 con Pester 3.4 disponible, ejecuta Invoke-Pester .\tests desde la carpeta del proyecto.
+
+
+## Interfaz gráfica
+
+Abre **Al Día** desde el menú Inicio, el escritorio o con PowerShell:
+
+    .\aldia.ps1 gui
+
+El escáner agrupa las actualizaciones y permite elegir cuáles instalar. **Historial**
+muestra el resultado de cada ejecución. **Herramientas** reúne las recomendaciones
+del fabricante, el inventario y la configuración de la actualización automática.
+
+Para explorar la interfaz y simular una instalación sin consultar el equipo ni pedir
+permisos de administrador, usa:
+
+    .\aldia.ps1 gui --demo

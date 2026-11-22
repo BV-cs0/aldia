@@ -27,7 +27,7 @@ function Merge-AldiaConfig {
             $valido = $valor -is [bool]
         } elseif ($base.Value -is [string]) {
             $valido = $valor -is [string] -and $(switch ($clave) {
-                'horaDiaria' { $valor -match '^(?:[01][0-9]|2[0-3]):[0-5][0-9]$' }
+                'horaDiaria' { (Test-AldiaHora $valor) }
                 'notificar' { $valor -cin @('siempre','solo-cambios','solo-errores','nunca') }
             })
         } else {
@@ -37,4 +37,10 @@ function Merge-AldiaConfig {
         }
         if ($valido) { $base.Value = $valor } else { Write-AldiaLog "Valor inválido: $ruta" }
     }
+}
+
+
+function Test-AldiaHora {
+    param($Valor)
+    $Valor -is [string] -and $Valor -cmatch '\A(?:[01][0-9]|2[0-3]):[0-5][0-9]\z'
 }

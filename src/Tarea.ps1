@@ -11,7 +11,7 @@ function Connect-AldiaTareas {
 }
 
 function Register-AldiaTarea {
-    param([string]$Programa, $Config)
+    param([string]$Programa, $Config, [switch]$Deshabilitada)
     $servicio = Connect-AldiaTareas
     try { $carpeta = $servicio.GetFolder('\Aldia') }
     catch { $carpeta = $servicio.GetFolder('\').CreateFolder('Aldia') }
@@ -20,6 +20,7 @@ function Register-AldiaTarea {
     $t.Principal.UserId = $usuario
     $t.Principal.LogonType = 3
     $t.Principal.RunLevel = 1
+    $t.Settings.Enabled = !$Deshabilitada
     $t.Settings.StartWhenAvailable = $true
     $t.Settings.RunOnlyIfNetworkAvailable = $true
     $t.Settings.DisallowStartIfOnBatteries = $false
@@ -98,10 +99,11 @@ function Install-Aldia {
     $destino = Get-AldiaProgramFiles
     New-AldiaDirectorioProtegido $destino
     if ($Origen.TrimEnd('\') -ine $destino.TrimEnd('\')) {
-        $fuentes = @('aldia.ps1','Aldia.psd1','Aldia.psm1','config.default.json','README.md')
+        $fuentes = @('aldia.ps1','Aldia.psd1','Aldia.psm1','config.default.json','README.md','gui\Principal.xaml')
         $fuentes += @(Get-ChildItem -LiteralPath (Join-Path $Origen 'src') -Filter '*.ps1' -File | ForEach-Object { Join-Path 'src' $_.Name })
         $src = Join-Path $destino 'src'
         New-AldiaDirectorioProtegido $src
+        New-AldiaDirectorioProtegido (Join-Path $destino 'gui')
         foreach ($archivo in $fuentes) {
             $objetivo = Join-Path $destino $archivo
             if (Test-Path -LiteralPath $objetivo) { Assert-AldiaPermisos $objetivo }
@@ -124,7 +126,9 @@ function Install-Aldia {
             }
         }
     }
+    Assert-AldiaPermisos (Join-Path $destino 'gui\Principal.xaml')
     Register-AldiaTarea $destino (Get-AldiaConfig $ruta $destino)
+    Set-AldiaAccesosDirectos $destino
 }
 
 function Uninstall-Aldia {
@@ -137,6 +141,7 @@ function Uninstall-Aldia {
         catch { if (($_.Exception.HResult -band 65535) -ne 2) { throw } }
         if (!$carpeta.GetTasks(1).Count -and !$carpeta.GetFolders(0).Count) { $servicio.GetFolder('\').DeleteFolder('Aldia',0) }
     }
+    Set-AldiaAccesosDirectos (Get-AldiaProgramFiles) -Quitar
     $rutas = @(Get-AldiaProgramFiles)
     if ($Todo) { $rutas += Join-Path $env:ProgramData 'Aldia' }
     foreach ($ruta in $rutas) {
@@ -147,5 +152,35 @@ function Uninstall-Aldia {
             if ($enlace) { throw "Se rechazó un punto de reanálisis: $($enlace.FullName)" }
             Remove-Item -LiteralPath $ruta -Recurse -Force -ErrorAction Stop
         }
+    }
+}
+
+
+function Set-AldiaAccesosDirectos {
+    param([string]$Programa, [switch]$Quitar)
+    $shell = New-Object -ComObject WScript.Shell
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $argumentos = '-WindowStyle Hidden -NoProfile -STA -ExecutionPolicy Bypass -File "' + (Join-Path $Programa 'aldia.ps1') + '" gui'
+    foreach ($especial in 'CommonPrograms','DesktopDirectory') {
+        $carpeta = [Environment]::GetFolderPath([Environment+SpecialFolder]$especial)
+        if (!$carpeta -or !(Test-Path -LiteralPath $carpeta -PathType Container)) { continue }
+        $ruta = Join-Path $carpeta 'Al Día.lnk'
+        Assert-AldiaRutaNormal $ruta
+        $acceso = $shell.CreateShortcut($ruta)
+        if (Test-Path -LiteralPath $ruta) {
+            if ($acceso.TargetPath -ine $ps -or $acceso.Arguments -ine $argumentos) {
+                if (!$Quitar) { Write-Warning "Ya hay un acceso distinto en $ruta." }
+                continue
+            }
+            if ($Quitar) { Remove-Item -LiteralPath $ruta -ErrorAction Stop }
+            continue
+        }
+        if ($Quitar) { continue }
+        $acceso.TargetPath = $ps
+        $acceso.Arguments = $argumentos
+        $acceso.WorkingDirectory = $Programa
+        $acceso.Description = 'Al Día'
+        $acceso.IconLocation = (Join-Path $env:SystemRoot 'System32\shell32.dll') + ',46'
+        $acceso.Save()
     }
 }

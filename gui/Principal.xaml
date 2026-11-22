@@ -1,0 +1,278 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Al Día" Width="900" Height="620" MinWidth="760" MinHeight="520"
+        WindowStartupLocation="CenterScreen" Background="#F3F6FA" Foreground="#1F3A5F"
+        FontFamily="Segoe UI" FontSize="14" UseLayoutRounding="True" Language="es-ES">
+    <Window.Resources>
+        <Style TargetType="TabControl">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <DockPanel KeyboardNavigation.TabNavigation="Local">
+                            <TabPanel DockPanel.Dock="Top" IsItemsHost="True" Background="#EEF2F7"
+                                      KeyboardNavigation.TabNavigation="Once"/>
+                            <ContentPresenter x:Name="PART_SelectedContentHost" ContentSource="SelectedContent"
+                                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+                        </DockPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Padding" Value="22,11"/>
+            <Setter Property="Foreground" Value="#465A72"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="Fondo" Background="Transparent">
+                            <Border x:Name="Subrayado" BorderThickness="0,0,0,3" BorderBrush="Transparent"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"/>
+                            </Border>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Fondo" Property="Background" Value="#E1ECFA"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Foreground" Value="#1F3A5F"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter TargetName="Subrayado" Property="BorderBrush" Value="#2E9E4F"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Interruptor" TargetType="ToggleButton">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <Border x:Name="Pista" Width="42" Height="22" CornerRadius="11" Background="#60738B" Padding="3">
+                                <Ellipse x:Name="Bolita" Width="16" Height="16" Fill="White" HorizontalAlignment="Left"/>
+                            </Border>
+                            <TextBlock x:Name="Indicador" Text="Desactivada" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Pista" Property="Background" Value="#2E9E4F"/>
+                                <Setter TargetName="Bolita" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Indicador" Property="Text" Value="Activada"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Foreground" Value="#1F3A5F"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Grid Background="#EEF2F7">
+                            <DockPanel Margin="10,8">
+                                <TextBlock x:Name="Orden" DockPanel.Dock="Right" Margin="6,0,0,0"/>
+                                <ContentPresenter RecognizesAccessKey="True"/>
+                            </DockPanel>
+                            <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Width="6" Cursor="SizeWE">
+                                <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"/></ControlTemplate></Thumb.Template>
+                            </Thumb>
+                            <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Width="6" Cursor="SizeWE">
+                                <Thumb.Template><ControlTemplate TargetType="Thumb"><Border Background="Transparent"/></ControlTemplate></Thumb.Template>
+                            </Thumb>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="SortDirection" Value="Ascending">
+                                <Setter TargetName="Orden" Property="Text" Value="↑"/>
+                            </Trigger>
+                            <Trigger Property="SortDirection" Value="Descending">
+                                <Setter TargetName="Orden" Property="Text" Value="↓"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <FontFamily x:Key="Iconos">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,7"/>
+            <Setter Property="Margin" Value="4,2"/>
+            <Setter Property="Background" Value="#E8EFF8"/>
+            <Setter Property="Foreground" Value="#1F3A5F"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Marco" CornerRadius="7" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Marco" Property="Opacity" Value="0.78"/></Trigger>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Marco" Property="Opacity" Value="0.42"/></Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="Marco" Property="BorderBrush" Value="#213D63"/>
+                                <Setter TargetName="Marco" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="Subtitulo" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,14,0,5"/>
+        </Style>
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#F3F6FA"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#E8EFF8"/>
+            <Setter Property="BorderBrush" Value="#DCE5EF"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="IsReadOnly" Value="True"/>
+            <Setter Property="MinRowHeight" Value="36"/>
+            <Setter Property="ColumnHeaderStyle" Value="{StaticResource {x:Type DataGridColumnHeader}}"/>
+            <Setter Property="AutoGenerateColumns" Value="False"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+        </Style>
+    </Window.Resources>
+    <DockPanel>
+        <Border DockPanel.Dock="Top" Background="#1F3A5F" Padding="22,12">
+            <StackPanel>
+                <TextBlock Text="Al Día" Foreground="White" FontSize="26" FontWeight="Bold"/>
+                <TextBlock Text="Tu PC al día: drivers, Windows y programas" Foreground="#E4ECF8"/>
+                <TextBlock x:Name="Demo" Text="Modo demostración" Foreground="#FFE3A1" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+        <Border DockPanel.Dock="Top" Background="#EEF2F7" Padding="16,6"
+                BorderBrush="#DCE5EF" BorderThickness="0,0,0,1">
+          <StackPanel>
+            <TextBlock x:Name="Fase" TextWrapping="Wrap" Margin="0,0,0,4" AutomationProperties.LiveSetting="Polite"/>
+            <ProgressBar x:Name="Progreso" Height="5" Visibility="Collapsed" Foreground="#2E9E4F"/>
+            <Border x:Name="Ocupado" Background="#E1ECFA" CornerRadius="7" Padding="10,5" Visibility="Collapsed">
+                <TextBlock Text="Hay una actualización automática en curso; espera a que termine" TextWrapping="Wrap"/>
+            </Border>
+            <Border x:Name="BandaReinicio" Background="#FFF0C2" CornerRadius="7" Padding="10,3" Visibility="Collapsed">
+                <DockPanel>
+                    <Button x:Name="Reiniciar" DockPanel.Dock="Right" Content="Reiniciar ahora"/>
+                    <TextBlock Text="Reinicia el PC para terminar" VerticalAlignment="Center"/>
+                </DockPanel>
+            </Border>
+            <TextBox x:Name="Avisos" IsReadOnly="True" Visibility="Collapsed" TextWrapping="Wrap"
+                     VerticalScrollBarVisibility="Auto" MaxHeight="64" Background="#FFF3DB" BorderThickness="0"
+                     AutomationProperties.Name="Avisos"/>
+          </StackPanel>
+        </Border>
+        <TabControl x:Name="Pestanas">
+            <TabItem Header="Escáner">
+                <DockPanel Margin="12,8">
+                    <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                      <Border x:Name="BandaProteccion" Background="#FFF0C2" CornerRadius="7" Padding="10,5" Visibility="Collapsed">
+                          <TextBlock x:Name="AvisoProteccion" TextWrapping="Wrap"/>
+                      </Border>
+                      <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="IconoTitular" FontFamily="{StaticResource Iconos}" FontSize="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock x:Name="Titular" FontSize="24" FontWeight="SemiBold" Text="Preparando el análisis…"/>
+                      </StackPanel>
+                      <TextBlock x:Name="ResumenInstalacion" FontSize="12" Foreground="#465A72" Visibility="Collapsed"/>
+                    </StackPanel>
+                    <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                        <WrapPanel VerticalAlignment="Center">
+                            <Button x:Name="Todas" Content="Seleccionar todo"/>
+                            <Button x:Name="Ninguna" Content="Ninguno"/>
+                            <TextBlock x:Name="Seleccionadas" VerticalAlignment="Center" Margin="6,0"/>
+                        </WrapPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button x:Name="Analizar" Content="Volver a analizar"/>
+                            <Button x:Name="Actualizar" Content="Actualizar seleccionadas (0)" Background="#2E9E4F"
+                                    Foreground="#102818" Padding="16,10" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="Filas" Margin="0,0,8,0"/>
+                    </ScrollViewer>
+                </DockPanel>
+            </TabItem>
+            <TabItem Header="Historial">
+                <Grid Margin="12">
+                    <Grid.RowDefinitions><RowDefinition Height="2*"/><RowDefinition Height="Auto"/><RowDefinition Height="3*"/></Grid.RowDefinitions>
+                    <DataGrid x:Name="Historial" SelectionMode="Single" AutomationProperties.Name="Ejecuciones">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Fecha" Binding="{Binding Fecha}" Width="2*"/>
+                            <DataGridTextColumn Header="Modo" Binding="{Binding Modo}" Width="*"/>
+                            <DataGridTextColumn Header="Actualizadas" Binding="{Binding Actualizadas}" Width="*"/>
+                            <DataGridTextColumn Header="Fallidas" Binding="{Binding Fallidas}" Width="*"/>
+                            <DataGridTextColumn Header="Reinicio" Binding="{Binding Reinicio}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <TextBlock Grid.Row="1" Text="Detalle de la ejecución" Style="{StaticResource Subtitulo}"/>
+                    <DataGrid Grid.Row="2" x:Name="DetalleHistorial" AutomationProperties.Name="Detalle de la ejecución">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Elemento" Binding="{Binding Nombre}" Width="2*"/>
+                            <DataGridTextColumn Header="Estado" Binding="{Binding Estado}" Width="*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{Binding Color}"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="Mensaje" Binding="{Binding Mensaje}" Width="2*">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Herramientas">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="12,0,12,12">
+                        <TextBlock Text="Herramientas de tu fabricante" Style="{StaticResource Subtitulo}"/>
+                        <StackPanel x:Name="Fabricantes"/>
+                        <StackPanel x:Name="Gpu"/>
+                        <TextBlock Text="Programas que nada actualiza" Style="{StaticResource Subtitulo}"/>
+                        <TextBlock Text="Al Día no puede actualizarlos con winget. Revisa si el programa tiene su propio actualizador o consulta la web del fabricante." TextWrapping="Wrap" Margin="0,0,0,5"/>
+                        <ItemsControl x:Name="Inventario"/>
+                        <TextBlock Text="Puntos de restauración" Style="{StaticResource Subtitulo}"/>
+                        <Border Background="White" BorderBrush="#DFE7F0" BorderThickness="1" CornerRadius="8" Padding="10,6">
+                            <DockPanel>
+                                <Button x:Name="ActivarProteccion" DockPanel.Dock="Right" Content="Activar"
+                                        AutomationProperties.Name="Activar la protección del sistema"/>
+                                <TextBlock x:Name="EstadoProteccion" Text="Consultando la protección del sistema…"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            </DockPanel>
+                        </Border>
+                        <TextBlock Text="Actualización automática" Style="{StaticResource Subtitulo}"/>
+                        <StackPanel x:Name="Ajustes">
+                            <ToggleButton x:Name="Automatica" HorizontalAlignment="Left" Style="{StaticResource Interruptor}"
+                                          AutomationProperties.Name="Actualización automática"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8">
+                                <Label Content="_Hora diaria" Target="{Binding ElementName=Hora}"/>
+                                <TextBox x:Name="Hora" Width="68" MaxLength="5" VerticalContentAlignment="Center"/>
+                            </StackPanel>
+                            <WrapPanel>
+                                <CheckBox x:Name="FuenteWindows" Content="Windows" Margin="0,0,16,0"/>
+                                <CheckBox x:Name="FuenteDrivers" Content="Drivers" Margin="0,0,16,0"/>
+                                <CheckBox x:Name="FuenteApps" Content="Programas" Margin="0,0,16,0"/>
+                                <CheckBox x:Name="FuenteNpm" Content="npm"/>
+                            </WrapPanel>
+                            <Button x:Name="Guardar" Content="Guardar" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

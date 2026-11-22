@@ -25,35 +25,38 @@ function Invoke-AldiaInstalacionWU {
 
 function Update-AldiaWU {
     param($Sesion, $Actualizaciones, [string]$Fuente, [switch]$Simular)
-    foreach ($u in $Actualizaciones) {
-        $kb = (@($u.KBArticleIDs | ForEach-Object { "KB$_" }) -join ', ')
-        $id = $u.Identity.UpdateID
-        if (!$id) { $id = $u.Title }
-        if ($u.InstallationBehavior.CanRequestUserInput) {
-            New-AldiaResultado $Fuente $id omitido $null 'Requiere interacción.' -Titulo $u.Title
-            continue
-        }
-        if ($Simular) {
-            Write-Host "Windows Update: $($u.Title) [UpdateID: $id]"
-            if (!$u.EulaAccepted) { Write-Host '  IUpdate.AcceptEula()' }
-            Write-Host '  IUpdateDownloader.Download()'
-            Write-Host '  IUpdateInstaller.Install()'
-            New-AldiaResultado $Fuente $id simulado $null $kb -Titulo $u.Title
-            continue
-        }
-        try {
-            if (!$u.EulaAccepted) { $u.AcceptEula() }
-            $coleccion = New-AldiaColeccionWU
-            $null = $coleccion.Add($u)
-            $descarga = Invoke-AldiaDescargaWU $Sesion $coleccion
-            if (!$u.IsDownloaded) { throw "Error de descarga de Windows Update (código $($descarga.ResultCode))." }
-            $instalacion = Invoke-AldiaInstalacionWU $Sesion $coleccion
-            $detalle = $instalacion.GetUpdateResult(0)
-            $estado = if ($detalle.ResultCode -eq 2) { 'actualizado' } else { 'fallo' }
-            $r = New-AldiaResultado $Fuente $id $estado $detalle.ResultCode $kb -Reinicio ($instalacion.RebootRequired -or $detalle.RebootRequired) -Titulo $u.Title
-            $r | Add-Member -NotePropertyName KB -NotePropertyValue $kb -PassThru
-        } catch { New-AldiaResultado $Fuente $id fallo $null $_.Exception.Message -Titulo $u.Title }
+    foreach ($u in $Actualizaciones) { Update-AldiaWUItem $Sesion $u $Fuente -Simular:$Simular }
+}
+
+function Update-AldiaWUItem {
+    param($Sesion, $u, [string]$Fuente, [switch]$Simular)
+    $kb = (@($u.KBArticleIDs | ForEach-Object { "KB$_" }) -join ', ')
+    $id = $u.Identity.UpdateID
+    if (!$id) { $id = $u.Title }
+    if ($u.InstallationBehavior.CanRequestUserInput) {
+        New-AldiaResultado $Fuente $id omitido $null 'Requiere interacción.' -Titulo $u.Title
+        return
     }
+    if ($Simular) {
+        Write-Host "Windows Update: $($u.Title) [UpdateID: $id]"
+        if (!$u.EulaAccepted) { Write-Host '  IUpdate.AcceptEula()' }
+        Write-Host '  IUpdateDownloader.Download()'
+        Write-Host '  IUpdateInstaller.Install()'
+        New-AldiaResultado $Fuente $id simulado $null $kb -Titulo $u.Title
+        return
+    }
+    try {
+        if (!$u.EulaAccepted) { $u.AcceptEula() }
+        $coleccion = New-AldiaColeccionWU
+        $null = $coleccion.Add($u)
+        $descarga = Invoke-AldiaDescargaWU $Sesion $coleccion
+        if (!$u.IsDownloaded) { throw "Error de descarga de Windows Update (código $($descarga.ResultCode))." }
+        $instalacion = Invoke-AldiaInstalacionWU $Sesion $coleccion
+        $detalle = $instalacion.GetUpdateResult(0)
+        $estado = if ($detalle.ResultCode -eq 2) { 'actualizado' } else { 'fallo' }
+        $r = New-AldiaResultado $Fuente $id $estado $detalle.ResultCode $kb -Reinicio ($instalacion.RebootRequired -or $detalle.RebootRequired) -Titulo $u.Title
+        $r | Add-Member -NotePropertyName KB -NotePropertyValue $kb -PassThru
+    } catch { New-AldiaResultado $Fuente $id fallo $null $_.Exception.Message -Titulo $u.Title }
 }
 
 function Update-AldiaWindows {

@@ -78,7 +78,8 @@ function Show-AldiaTabla {
     })
     foreach ($fila in $filas) {
         $celdas = @(for ($i = 0; $i -lt $claves.Count; $i++) {
-            $valor = [string]$fila[$i] -replace '[\r\n\t]+', ' '
+            $valor = [string]$fila[$i] -replace '[\r
+\t]+', ' '
             $largo = $ui.LengthInBufferCells($valor)
             if ($largo -gt $anchos[$i]) {
                 do {
@@ -111,17 +112,7 @@ function Invoke-AldiaActualizacion {
             }
         }
         $inicio = (Get-Date).ToString('o')
-        if ($Config.puntoRestauracion -and ('windows' -in $Fuentes -or 'drivers' -in $Fuentes)) {
-            try {
-                if ($Simular) {
-                    Write-Host 'Checkpoint-Computer -Description "Al Día" -RestorePointType MODIFY_SETTINGS'
-                } elseif ($PSVersionTable.PSEdition -eq 'Core') {
-                    Invoke-AldiaWindowsPowerShell 'Checkpoint-Computer -Description "Al Día" -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningAction Stop'
-                } else {
-                    Checkpoint-Computer -Description 'Al Día' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningAction Stop | Out-Null
-                }
-            } catch { Write-AldiaLog "No se pudo crear el punto de restauración: $_" }
-        }
+        New-AldiaPuntoRestauracion $Config $Fuentes -Simular:$Simular
         $resultados = @(foreach ($fuente in $Fuentes) {
             try {
                 switch ($fuente) {
@@ -252,9 +243,10 @@ function Invoke-AldiaCli {
     $pausar = $Argumentos -contains '--pausar' -and !$programado
     try {
         $orden = $Argumentos[0]
-        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config') {
-            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial y config.'
+        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui') {
+            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config y gui.'
         }
+        if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
         $solo = @(); $n = 10; $forzar = $false; $todo = $false
         $fuentesValidas = @('windows','drivers','apps','npm')
         for ($i = 1; $i -lt $Argumentos.Count; $i++) {
@@ -266,7 +258,8 @@ function Invoke-AldiaCli {
                 'actualizar/--forzar' { $forzar = $true }
                 'actualizar/--solo' {
                     $i++
-                    $solo = @($Argumentos[$i] -split ',')
+                    if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
+        $solo = @($Argumentos[$i] -split ',')
                     if (!$solo.Count -or @($solo | Where-Object { $_ -notin $fuentesValidas }).Count) {
                         throw 'Indica fuentes válidas para --solo: apps,windows,drivers,npm.'
                     }
@@ -301,7 +294,8 @@ function Invoke-AldiaCli {
         if ($orden -eq 'desinstalar') { Uninstall-Aldia -Todo:$todo; return 0 }
         if ($orden -eq 'config') {
             if (!(Test-Path -LiteralPath $rutaConfig)) { throw 'Instala Al Día antes de editar la configuración.' }
-            $null = Invoke-AldiaComando (Join-Path $env:SystemRoot 'System32\notepad.exe') @($rutaConfig) -Visible
+            $null = Invoke-AldiaComando (Join-Path $env:SystemRoot 'System32
+otepad.exe') @($rutaConfig) -Visible
             return 0
         }
         $config = Get-AldiaConfig $rutaConfig
@@ -328,5 +322,20 @@ function Invoke-AldiaCli {
         return 2
     } finally {
         if ($pausar) { $null = Read-Host 'Pulsa Enter para cerrar' }
+    }
+}
+
+function New-AldiaPuntoRestauracion {
+    param($Config, [string[]]$Fuentes, [switch]$Simular)
+    if ($Config.puntoRestauracion -and ('windows' -in $Fuentes -or 'drivers' -in $Fuentes)) {
+        try {
+            if ($Simular) {
+                Write-Host 'Checkpoint-Computer -Description "Al Día" -RestorePointType MODIFY_SETTINGS'
+            } elseif ($PSVersionTable.PSEdition -eq 'Core') {
+                Invoke-AldiaWindowsPowerShell 'Checkpoint-Computer -Description "Al Día" -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningAction Stop'
+            } else {
+                Checkpoint-Computer -Description 'Al Día' -RestorePointType MODIFY_SETTINGS -ErrorAction Stop -WarningAction Stop | Out-Null
+            }
+        } catch { Write-AldiaLog "No se pudo crear el punto de restauración: $_" }
     }
 }

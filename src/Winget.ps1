@@ -98,27 +98,7 @@ function Update-AldiaApps {
         New-AldiaResultado apps $_.Id explicito $null 'Requiere selección explícita.' $_.Version $_.Disponible -Titulo $_.Nombre
     }
     $resultados = @(foreach ($p in Get-AldiaOrdenApps $paquetes $Config) {
-        if ($p.Id -notmatch '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') { Write-AldiaLog "Se descartó un Id inválido: $($p.Id)"; continue }
-        $argumentos = @('upgrade','--id',$p.Id,'--exact')
-        if ($p.Origen -match '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') { $argumentos += @('--source',$p.Origen) }
-        $argumentos += @('--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity')
-        if ($p.VersionDesconocida) { $argumentos += '--include-unknown' }
-        try {
-            $r = Invoke-AldiaComando winget.exe $argumentos -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
-            if ($Simular) {
-                New-AldiaResultado apps $p.Id simulado $null '' $p.Version $p.Disponible -Titulo $p.Nombre
-                continue
-            }
-            $resultado = ConvertTo-AldiaEstadoWinget $r.Codigo -Timeout:$r.Timeout
-            if ($directorioLog) {
-                [IO.Directory]::CreateDirectory($directorioLog) > $null
-                $nombreLog = 'winget-{0}-{1}.log' -f ([guid]::NewGuid()), $p.Id
-                [IO.File]::WriteAllLines((Join-Path $directorioLog $nombreLog), [string[]]@($resultado.Codigo,$r.Salida,$r.Error), [Text.Encoding]::UTF8)
-            }
-        } catch { $resultado = New-AldiaResultado apps $p.Id fallo $null $_.Exception.Message }
-        $resultado.Id = $p.Id; $resultado.Titulo = $p.Nombre
-        $resultado.Antes = $p.Version; $resultado.Despues = $p.Disponible
-        $resultado
+        Update-AldiaAppItem $Config $p -Simular:$Simular
     })
     if (!$Simular -and $resultados.Count) {
         try {
@@ -135,4 +115,29 @@ function Update-AldiaApps {
         }
     }
     $resultados
+}
+
+function Update-AldiaAppItem {
+    param($Config, $p, [switch]$Simular)
+    if ($p.Id -notmatch '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') { Write-AldiaLog "Se descartó un Id inválido: $($p.Id)"; return }
+    $argumentos = @('upgrade','--id',$p.Id,'--exact')
+    if ($p.Origen -match '^[A-Za-z0-9][A-Za-z0-9.\-_+]*$') { $argumentos += @('--source',$p.Origen) }
+    $argumentos += @('--silent','--accept-package-agreements','--accept-source-agreements','--disable-interactivity')
+    if ($p.VersionDesconocida) { $argumentos += '--include-unknown' }
+    try {
+        $r = Invoke-AldiaComando winget.exe $argumentos -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
+        if ($Simular) {
+            New-AldiaResultado apps $p.Id simulado $null '' $p.Version $p.Disponible -Titulo $p.Nombre
+            return
+        }
+        $resultado = ConvertTo-AldiaEstadoWinget $r.Codigo -Timeout:$r.Timeout
+        if ($directorioLog) {
+            [IO.Directory]::CreateDirectory($directorioLog) > $null
+            $nombreLog = 'winget-{0}-{1}.log' -f ([guid]::NewGuid()), $p.Id
+            [IO.File]::WriteAllLines((Join-Path $directorioLog $nombreLog), [string[]]@($resultado.Codigo,$r.Salida,$r.Error), [Text.Encoding]::UTF8)
+        }
+    } catch { $resultado = New-AldiaResultado apps $p.Id fallo $null $_.Exception.Message }
+    $resultado.Id = $p.Id; $resultado.Titulo = $p.Nombre
+    $resultado.Antes = $p.Version; $resultado.Despues = $p.Disponible
+    $resultado
 }

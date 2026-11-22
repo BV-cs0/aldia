@@ -28,14 +28,20 @@ function Update-AldiaNpm {
     if (!$ejecutable) { return }
     foreach ($p in Get-AldiaNpm $ejecutable) {
         if ($p.Id -in $Config.excluir) { continue }
-        try {
-            $r = Invoke-AldiaComando $ejecutable @('install','-g',"$($p.Id)@latest") -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
-            if ($Simular) {
-                New-AldiaResultado npm $p.Id simulado $null '' $p.Version $p.Disponible
-                continue
-            }
-            $estado = if ($r.Timeout) { 'timeout' } elseif ($r.Codigo -eq 0) { 'actualizado' } else { 'fallo' }
-            New-AldiaResultado npm $p.Id $estado $r.Codigo $r.Error $p.Version $p.Disponible
-        } catch { New-AldiaResultado npm $p.Id fallo $null $_.Exception.Message $p.Version $p.Disponible }
+        Update-AldiaNpmItem $Config $p $ejecutable -Simular:$Simular
     }
+}
+
+function Update-AldiaNpmItem {
+    param($Config, $p, [string]$Ejecutable = (Get-AldiaNpmEjecutable), [switch]$Simular)
+    if (!$Ejecutable) { return (New-AldiaResultado npm $p.Id fallo $null "npm no está disponible.") }
+    try {
+        $r = Invoke-AldiaComando $ejecutable @('install','-g',"$($p.Id)@latest") -Timeout ($Config.timeoutMinutosPorPaquete * 60) -Simular:$Simular
+        if ($Simular) {
+            New-AldiaResultado npm $p.Id simulado $null '' $p.Version $p.Disponible
+            return
+        }
+        $estado = if ($r.Timeout) { 'timeout' } elseif ($r.Codigo -eq 0) { 'actualizado' } else { 'fallo' }
+        New-AldiaResultado npm $p.Id $estado $r.Codigo $r.Error $p.Version $p.Disponible
+    } catch { New-AldiaResultado npm $p.Id fallo $null $_.Exception.Message $p.Version $p.Disponible }
 }

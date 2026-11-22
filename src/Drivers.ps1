@@ -61,7 +61,8 @@ function Get-AldiaDell {
 
 function Get-AldiaRecomendaciones {
     param($Gpu = @(Get-AldiaGpu))
-    $equipo = @((Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).Manufacturer) + @($Gpu.Name) + @($Gpu.AdapterCompatibility)
+    $marca = (Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).Manufacturer
+    $modelos = @($Gpu.Name) + @($Gpu.AdapterCompatibility)
     $rutas = @(
         'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
         'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
@@ -70,11 +71,16 @@ function Get-AldiaRecomendaciones {
     $instaladas = @(Get-ItemProperty -Path $rutas -ErrorAction SilentlyContinue)
     foreach ($fabricante in $script:AldiaFabricantes) {
         $patron, $nombre, $displayName, $id, $url = $fabricante
-        if (!($equipo -match $patron)) { continue }
+        $equipo = if ($marca -match $patron) { "equipo $marca" }
+            else {
+                $modelo = $modelos -match $patron | Select-Object -First 1
+                if ($modelo) { "GPU $modelo" }
+            }
+        if (!$equipo) { continue }
         $instalada = $instaladas | Where-Object { $_.DisplayName -match $displayName } | Select-Object -First 1
         $estado = if ($instalada) { 'sí' } else { 'no' }
         $como = if ($id) { "winget install --id $id --exact" } else { $url }
-        [pscustomobject]@{ Herramienta = $nombre; Instalado = $estado; Version = $instalada.DisplayVersion; ComoConseguirla = $como }
+        [pscustomobject]@{ Herramienta = $nombre; Instalado = $estado; Version = $instalada.DisplayVersion; ComoConseguirla = $como; Id = $id; Url = $url; Equipo = $equipo }
     }
 }
 

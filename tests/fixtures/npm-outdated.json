@@ -1,0 +1,4 @@
+{
+  "typescript": { "current": "5.8.2", "wanted": "5.8.3", "latest": "5.9.2" },
+  "@example/tool": { "current": "1.0.0", "wanted": "1.0.0", "latest": "2.0.0" }
+}

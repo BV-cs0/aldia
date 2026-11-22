@@ -1,0 +1,4 @@
+Nombre           Id                  Versión      Disponible  Origen
+---------------------------------------------------------------------
+Aplicación Ñ     Ejemplo.Aplicacion   Desconocida  2.0         winget
+1 actualizaciones disponibles.

@@ -1,0 +1,7 @@
+﻿Nombre                      Id                                                Versión     Origen
+------------------------------------------------------------------------------------------------
+Aplicación clásica          ARP\Machine\X64\{12345678}                        1.2         
+Utilidad de usuario         ARP\User\X64\Utilidad con espacios                2.0         
+Aplicación Store            MSIX\Demo.Store                                   3.0         msstore
+Juego de Steam              ARP\Machine\X64\Steam App 123                     4.0         
+Paquete normal              Demo.Package                                      5.0         winget

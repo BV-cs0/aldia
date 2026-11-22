@@ -1,0 +1,4 @@
+Name              Id                  Version    Available   Source
+-------------------------------------------------------------------
+工具程序… Example.Publisher 1.0 2.0 winget
+1 upgrades available.

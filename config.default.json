@@ -1,0 +1,12 @@
+{
+  "fuentes": { "apps": true, "windows": true, "drivers": true, "npm": true },
+  "excluir": [],
+  "incluirVersionDesconocida": true,
+  "timeoutMinutosPorPaquete": 30,
+  "puntoRestauracion": true,
+  "notificar": "siempre",
+  "horaDiaria": "12:00",
+  "bateriaMinima": 50,
+  "drivers": { "excluirClases": [], "rescanearDispositivos": true },
+  "diasLogs": 60
+}

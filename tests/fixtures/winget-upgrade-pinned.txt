@@ -1,0 +1,10 @@
+Name             Id                  Version    Available   Source
+------------------------------------------------------------------
+Example          Example.App         1.0        2.0         winget
+1 upgrades available.
+
+The following packages require explicit targeting:
+Name             Id                  Version    Available   Source
+------------------------------------------------------------------
+Pinned           Example.Pinned      3.0        4.0         winget
+1 upgrades available.

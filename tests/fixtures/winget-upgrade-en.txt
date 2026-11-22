@@ -1,0 +1,23 @@
+Name                                                         Id                                 Version              Available            Source
+-------------------------------------------------------------------------------------------------------------------------------------------------
+App Installer                                                Microsoft.AppInstaller             1.29.379.0           1.29.380             winget
+Apple Mobile Device Support                                  Apple.AppleMobileDeviceSupport     18.0.0.33            19.4.0.10            winget
+Burp Suite 2026.9.2                                          PortSwigger.BurpSuite              2026.9.2             2026.11.2            winget
+Canva                                                        XP8K17RNMM8MTN                     1.128.0-beta         1.128.0              msstore
+CodeMeter Runtime Kit v8.41a                                 Wibu-Systems.CodeMeterRuntimeKit   8.41.7187.501        9.10.8178.501        winget
+Epic Games Launcher                                          EpicGames.EpicGamesLauncher        1.3.193.0            1.3.210.0            winget
+GitHub CLI                                                   GitHub.cli                         2.103.3              2.105.0              winget
+GitHub Desktop                                               GitHub.GitHubDesktop               3.6.10               3.7.0                winget
+jadx                                                         Skylot.jadx                        1.5.6                1.5.7                winget
+Microsoft Teams                                              Microsoft.Teams                    26213.1006.5014.9784 26288.2004.5269.3420 winget
+Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.30501 Microsoft.VCRedist.2013.x64        12.0.30501.0         12.0.40664.0         winget
+Microsoft Visual C++ 2013 Redistributable (x86) - 12.0.30501 Microsoft.VCRedist.2013.x86        12.0.30501.0         12.0.40664.0         winget
+Microsoft Visual C++ v14 Redistributable (x64) - 14.51.36247 Microsoft.VCRedist.2015+.x64       14.51.36247.0        14.52.37029.0        winget
+Microsoft Visual C++ v14 Redistributable (x86) - 14.51.36247 Microsoft.VCRedist.2015+.x86       14.51.36247.0        14.52.37029.0        winget
+Microsoft Visual Studio Code (User)                          Microsoft.VisualStudioCode         1.145.2              1.146.0              winget
+Microsoft Windows Desktop Runtime 10.0.13 (x64)              Microsoft.DotNet.DesktopRuntime.10 10.0.13              10.0.15              winget
+Python 3.10.0 (64-bit)                                       Python.Python.3.10                 3.10.0               3.10.11              winget
+Python Launcher                                              Python.Launcher                    < 3.10.8             3.15.2               winget
+Trivy                                                        AquaSecurity.Trivy                 0.76.1               0.76.2               winget
+Ubisoft Connect                                              Ubisoft.Connect                    < 175.2.0.13423      175.2.0.13423        winget
+20 upgrades available.

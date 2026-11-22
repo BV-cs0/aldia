@@ -1,0 +1,4 @@
+Name             Id                  Version    Available   Source
+------------------------------------------------------------------
+Python Launcher  Python.Launcher     < 3.10.8   3.15.2      winget
+1 upgrades available.

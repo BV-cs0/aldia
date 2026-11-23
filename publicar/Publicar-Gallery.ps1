@@ -25,6 +25,8 @@ if ($Prueba) { return }
 
 if (!(Get-Module Microsoft.PowerShell.PSResourceGet -ListAvailable)) {
     Write-Host 'Instalando la herramienta oficial de Microsoft para publicar (PSResourceGet)...'
+    $nuget = Get-PackageProvider -ListAvailable -Name NuGet -ErrorAction SilentlyContinue | Where-Object { $_.Version -ge [version]'2.8.5.201' }
+    if (!$nuget) { $null = Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Scope CurrentUser -Force }
     Install-Module Microsoft.PowerShell.PSResourceGet -Repository PSGallery -Scope CurrentUser -Force
 }
 Import-Module Microsoft.PowerShell.PSResourceGet

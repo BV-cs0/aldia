@@ -232,6 +232,85 @@ function Get-AldiaMemoriaHardware {
     [pscustomobject]@{ Detalle=(@($texto) + $notas -join ' ') }
 }
 
+# Códigos de pantallazo azul (bug check) más habituales agrupados por la pieza que suele causarlos.
+$script:AldiaCausasPantallazo = @(
+    @{ Grupo='grafica'; Codigos=0x116,0x117,0x119,0x10E,0x113
+        Texto='la tarjeta gráfica dejó de responder y Windows no pudo recuperarla'
+        Consejo='actualiza el controlador de la tarjeta gráfica y vigila que el PC no se caliente.' }
+    @{ Grupo='hardware'; Codigos=0x124,0x101,0x9C
+        Texto='falló el propio hardware (procesador, memoria o placa), a veces por calor'
+        Consejo='limpia el polvo de las rejillas y vigila la temperatura. Si se repite, que lo revise un técnico.' }
+    @{ Grupo='memoria'; Codigos=0x1A,0x50,0x4E,0x12B
+        Texto='hubo un error al usar la memoria RAM (a veces lo provoca un controlador)'
+        Consejo='comprueba la memoria con «Diagnóstico de memoria de Windows» (mdsched).' }
+    @{ Grupo='disco'; Codigos=0x7A,0x7B,0x77,0xF4,0x24
+        Texto='Windows no pudo leer el disco a tiempo'
+        Consejo='revisa el estado del disco en esta misma pestaña y haz copia de tus archivos.' }
+    @{ Grupo='energia'; Codigos=0x9F
+        Texto='un controlador falló al suspender o despertar el PC'
+        Consejo='instala los controladores del fabricante del PC (chipset y gestión de energía).' }
+    @{ Grupo='atasco'; Codigos=0x133
+        Texto='un controlador se quedó atascado (a menudo el del disco o el del chipset)'
+        Consejo='instala los controladores del fabricante del PC y actualiza el firmware del disco.' }
+    @{ Grupo='controlador'; Codigos=0xD1,0x0A,0x3B,0x7E,0x1E,0xC4,0xC5,0xD5,0x19,0xC2,0x139,0xFC
+        Texto='falló un controlador'
+        Consejo='actualiza los controladores desde la pestaña Escáner.' }
+    @{ Grupo='windows'; Codigos=0xEF,0xC000021A
+        Texto='se cerró una parte esencial de Windows'
+        Consejo='repara los archivos de Windows con «sfc /scannow» en una consola de administrador.' }
+)
+
+function Get-AldiaCodigoPantallazo {
+    param($Evento)
+    # El primer dato del evento 1001 es el código sin traducir: «0x00000116 (0x…, …)».
+    $texto = @($Evento.Properties | Select-Object -First 1 | ForEach-Object Value) + @($Evento.Message) -join ' '
+    if ($texto -match '0x([0-9A-Fa-f]{1,8})\b') { [uint32]('0x' + $Matches[1]) }
+}
+
+function Get-AldiaFabricanteGrafica {
+    param($Evento)
+    $origen = "$($Evento.ProviderName) $(@($Evento.Properties | ForEach-Object Value) -join ' ')"
+    if ($origen -match 'nvlddmkm|nvidia') { 'NVIDIA' }
+    elseif ($origen -match 'amdkmdag|amdwddmg|atikmdag|\bamd\b') { 'AMD' }
+    elseif ($origen -match 'igdkmd|igfx|intel') { 'Intel' }
+}
+
+function Get-AldiaRecuperacionesGrafica {
+    param([datetime]$Desde)
+    # Cuelgues de la gráfica que Windows sí recuperó (sin pantallazo). Si el proveedor no existe en
+    # este PC (otra marca), no es un error: por eso no se suman a los errores de lectura.
+    $eventos = @(
+        Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$Desde; ProviderName='Display'; Id=4101} -ErrorAction SilentlyContinue
+        Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$Desde; ProviderName='nvlddmkm'; Id=153} -ErrorAction SilentlyContinue
+    ) | Where-Object { $_ }
+    # Un mismo cuelgue deja a veces varios eventos seguidos: contar uno por minuto.
+    @($eventos | Group-Object { $_.TimeCreated.ToString('yyyyMMddHHmm') } | ForEach-Object { $_.Group[0] })
+}
+
+function Get-AldiaCausasPantallazo {
+    param($Pantallazos, $Recuperaciones)
+    $marcas = @($Recuperaciones | ForEach-Object { Get-AldiaFabricanteGrafica $_ } | Where-Object { $_ } | Sort-Object -Unique)
+    $casos = foreach ($evento in $Pantallazos) {
+        $codigo = Get-AldiaCodigoPantallazo $evento
+        $causa = $script:AldiaCausasPantallazo | Where-Object { $null -ne $codigo -and $_.Codigos -contains $codigo } | Select-Object -First 1
+        [pscustomobject]@{ Evento=$evento; Codigo=$codigo; Causa=$causa; Clave=if ($causa) { $causa.Grupo } else { "otro-$codigo" } }
+    }
+    foreach ($grupo in @($casos | Group-Object Clave | Sort-Object { ($_.Group.Evento.TimeCreated | Measure-Object -Maximum).Maximum } -Descending)) {
+        $c = $grupo.Group[0]
+        $codigos = (@($grupo.Group | Where-Object { $null -ne $_.Codigo } | ForEach-Object { '0x{0:X}' -f $_.Codigo }) | Select-Object -Unique) -join ', '
+        $ultimo = ($grupo.Group.Evento.TimeCreated | Measure-Object -Maximum).Maximum
+        $veces = Format-AldiaCantidadGui $grupo.Count 'vez' 'veces'
+        $datos = @($veces; "el último el $($ultimo.ToString('dd/MM/yyyy'))"; if ($codigos) { "código $codigos" }) -join ', '
+        if ($c.Causa) {
+            $texto = $c.Causa.Texto
+            if ($c.Causa.Grupo -eq 'grafica' -and $marcas.Count -eq 1) { $texto = $texto -replace '^la tarjeta gráfica', "la tarjeta gráfica ($($marcas[0]))" }
+            "Pantallazo azul: $texto ($datos). Qué hacer: $($c.Causa.Consejo)"
+        } else {
+            "Pantallazo azul por una causa que Al Día no reconoce ($datos). Si se repite, busca ese código o pide ayuda."
+        }
+    }
+}
+
 function Get-AldiaEstabilidad {
     param([datetime]$Ahora = (Get-Date))
     $desde = $Ahora.AddDays(-30)
@@ -239,14 +318,22 @@ function Get-AldiaEstabilidad {
     $apagados = @(Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$desde; ProviderName='Microsoft-Windows-Kernel-Power'; Id=41} -ErrorAction SilentlyContinue -ErrorVariable +errores)
     $azules = @(Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$desde; ProviderName='Microsoft-Windows-WER-SystemErrorReporting'; Id=1001} -ErrorAction SilentlyContinue -ErrorVariable +errores)
     $hardware = @(Get-WinEvent -FilterHashtable @{LogName='System'; StartTime=$desde; ProviderName='Microsoft-Windows-WHEA-Logger'} -ErrorAction SilentlyContinue -ErrorVariable +errores)
+    $graficas = @(Get-AldiaRecuperacionesGrafica $desde)
+    $causas = @(Get-AldiaCausasPantallazo $azules $graficas)
     $ultimo = (@($apagados + $azules + $hardware) | Sort-Object TimeCreated -Descending | Select-Object -First 1).TimeCreated
     $texto = @(
         Format-AldiaCantidadGui $apagados.Count 'apagado inesperado' 'apagados inesperados'
         Format-AldiaCantidadGui $azules.Count 'pantallazo azul' 'pantallazos azules'
         Format-AldiaCantidadGui $hardware.Count 'error de hardware' 'errores de hardware'
     ) -join ' · '
+    if ($graficas.Count) {
+        $texto += ' · ' + (Format-AldiaCantidadGui $graficas.Count 'cuelgue de la gráfica' 'cuelgues de la gráfica') + ' (Windows la recuperó)'
+        if (!$azules.Count -and $graficas.Count -ge 3) {
+            $causas += 'La tarjeta gráfica se cuelga a menudo aunque Windows la recupera. Qué hacer: actualiza su controlador y vigila que el PC no se caliente.'
+        }
+    }
     $estado = 'bien'
-    if ($apagados.Count -ge 3 -or $azules.Count -or $hardware.Count) {
+    if ($apagados.Count -ge 3 -or $azules.Count -or $hardware.Count -or $graficas.Count -ge 3) {
         $estado = 'aviso'
         if ($ultimo) { $texto += " · Último: $($ultimo.ToString('g'))" }
     } elseif (@($errores | Where-Object FullyQualifiedErrorId -notlike 'NoMatchingEventsFound,*').Count) {
@@ -255,7 +342,8 @@ function Get-AldiaEstabilidad {
     } elseif ($apagados.Count) {
         $texto += ' (por ejemplo, se quedó sin batería o se mantuvo pulsado el botón).'
     }
-    [pscustomobject]@{ Estado=$estado; Detalle=$texto; Apagados=$apagados.Count; Pantallazos=$azules.Count; Errores=$hardware.Count }
+    [pscustomobject]@{ Estado=$estado; Detalle=$texto; Causas=$causas; Apagados=$apagados.Count; Pantallazos=$azules.Count
+        Errores=$hardware.Count; CuelguesGrafica=$graficas.Count }
 }
 
 function Get-AldiaHardware {

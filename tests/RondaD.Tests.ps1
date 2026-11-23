@@ -225,6 +225,60 @@ Describe 'Ronda D: diagnóstico en distintos equipos' {
             }
         }
 
+        Context 'explica la causa de cada pantallazo azul' {
+            It 'reconoce la gráfica, su marca y agrupa los repetidos' {
+                $ahora = [datetime]'2026-11-23'
+                Mock Get-WinEvent {}
+                Mock Get-WinEvent {
+                    @{ TimeCreated=[datetime]'2026-10-25 22:18'; Properties=@(@{ Value='0x00000116 (0xffffc10a1b304010, 0xfffff80090e7be40, 0xffffffffc000009a, 0x0000000000000004)' }) }
+                    @{ TimeCreated=[datetime]'2026-11-02 10:00'; Properties=@(@{ Value='0x00000116 (0x1, 0x2, 0x3, 0x4)' }) }
+                    @{ TimeCreated=[datetime]'2026-11-20 09:30'; Properties=@(@{ Value='0x0000001a (0x41792, 0x2, 0x3, 0x4)' }) }
+                } -ParameterFilter { $FilterHashtable.Id -eq 1001 }
+                Mock Get-WinEvent {
+                    @{ TimeCreated=[datetime]'2026-11-07 16:43:26'; ProviderName='nvlddmkm'; Properties=@(@{ Value='\Device\Video3' }) }
+                    @{ TimeCreated=[datetime]'2026-11-07 16:43:40'; ProviderName='nvlddmkm'; Properties=@(@{ Value='\Device\Video3' }) }
+                } -ParameterFilter { $FilterHashtable.ProviderName -eq 'nvlddmkm' }
+                $r = Get-AldiaEstabilidad $ahora
+                $r.Estado | Should Be aviso
+                $r.CuelguesGrafica | Should Be 1
+                $r.Detalle | Should Match '1 cuelgue de la gráfica'
+                $r.Causas.Count | Should Be 2
+                $r.Causas[0] | Should Match 'memoria RAM'
+                $r.Causas[0] | Should Match '0x1A'
+                $r.Causas[1] | Should Match 'tarjeta gráfica \(NVIDIA\)'
+                $r.Causas[1] | Should Match '2 veces, el último el 02/11/2026, código 0x116'
+            }
+        }
+
+        Context 'avisa de un código desconocido sin inventar la causa' {
+            It 'comprueba el resultado' {
+                $evento = @{ TimeCreated=[datetime]'2026-11-20'; Properties=@(@{ Value='0x00000999 (0x0, 0x0, 0x0, 0x0)' }) }
+                $causa = @(Get-AldiaCausasPantallazo @($evento) @())
+                $causa[0] | Should Match 'no reconoce'
+                $causa[0] | Should Match '0x999'
+            }
+        }
+
+        Context 'avisa de los cuelgues repetidos de la gráfica aunque no haya pantallazo' {
+            It 'comprueba el resultado' {
+                Mock Get-WinEvent {}
+                Mock Get-WinEvent {
+                    1..3 | ForEach-Object { @{ TimeCreated=[datetime]"2026-11-1$_"; ProviderName='Display'; Properties=@(@{ Value='amdkmdag' }) } }
+                } -ParameterFilter { $FilterHashtable.ProviderName -eq 'Display' }
+                $r = Get-AldiaEstabilidad ([datetime]'2026-11-23')
+                $r.Estado | Should Be aviso
+                $r.Causas[0] | Should Match 'se cuelga a menudo'
+            }
+        }
+
+        Context 'no marca como error de lectura que falte el proveedor de otra marca de gráfica' {
+            It 'comprueba el resultado' {
+                Mock Get-WinEvent {}
+                Mock Get-WinEvent { Write-Error 'No hay proveedor' -ErrorId 'NoMatchingProvidersFound' } -ParameterFilter { $FilterHashtable.ProviderName -eq 'nvlddmkm' }
+                (Get-AldiaEstabilidad ([datetime]'2026-11-23')).Estado | Should Be bien
+            }
+        }
+
         Context 'muestra la memoria por módulos sin marcar una velocidad menor en rojo' {
             It 'comprueba el resultado' {
                 Mock Get-CimInstance { @{Capacity=8GB; ConfiguredClockSpeed=5200; Speed=5600}; @{Capacity=8GB; ConfiguredClockSpeed=5200; Speed=5600} }

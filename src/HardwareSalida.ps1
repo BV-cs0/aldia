@@ -49,6 +49,7 @@ function Get-AldiaFilasHardwareInforme {
         "Memoria · $($Hardware.Memoria.Detalle)"
     }
     "Estabilidad (30 días) · $($Hardware.Estabilidad.Detalle)"
+    foreach ($causa in $Hardware.Estabilidad.Causas) { $causa }
     foreach ($v in $Velocidad) { "Velocidad · $($v.Detalle)" }
 }
 
@@ -77,5 +78,6 @@ function Show-AldiaHardwareCli {
         if ($i) { Show-AldiaTabla 'Batería' @($baterias) ([ordered]@{ Bateria=8; Estado=12; Detalle=65 }) }
         Show-AldiaTabla 'Memoria' @($Hardware.Memoria) ([ordered]@{ Detalle=100 })
     }
-    Show-AldiaTabla 'Estabilidad (30 días)' @($Hardware.Estabilidad) ([ordered]@{ Estado=12; Detalle=100 })
+    Show-AldiaTabla 'Estabilidad (30 días)' @($Hardware.Estabilidad) ([ordered]@{ Estado=12; Detalle=160 })
+    foreach ($causa in $Hardware.Estabilidad.Causas) { Write-Host $causa -ForegroundColor Yellow }
 }

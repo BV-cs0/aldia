@@ -8,7 +8,8 @@
         )
         Baterias=@([pscustomobject]@{ Nombre='Batería'; Salud=72; Estado='aviso'; Ciclos=380; Quimica='Litio'; Detalle='Dura menos que nueva.' })
         Memoria=@{ Detalle='16 GB · 2 módulos · 5200 MT/s' }
-        Estabilidad=@{ Estado='bien'; Detalle='0 apagados inesperados · 0 pantallazos azules · 0 errores de hardware' }
+        Estabilidad=@{ Estado='aviso'; Detalle='1 apagado inesperado · 1 pantallazo azul · 0 errores de hardware · Último: 20/11/2026 21:45'
+            Causas=@('Pantallazo azul: la tarjeta gráfica dejó de responder y Windows no pudo recuperarla (1 vez, el último el 20/11/2026, código 0x116). Qué hacer: actualiza el controlador de la tarjeta gráfica y vigila que el PC no se caliente.') }
     }
 }
 
@@ -76,7 +77,8 @@ function Show-AldiaHardwareGui {
         }
         Add-AldiaTarjetaHardwareGui $panel 'Memoria' $Hardware.Memoria.Detalle
     }
-    Add-AldiaTarjetaHardwareGui $panel 'Estabilidad (30 días)' $Hardware.Estabilidad.Detalle $Hardware.Estabilidad.Estado
+    $estabilidad = (@($Hardware.Estabilidad.Detalle) + @($Hardware.Estabilidad.Causas)) -join "`n"
+    Add-AldiaTarjetaHardwareGui $panel 'Estabilidad (30 días)' $estabilidad $Hardware.Estabilidad.Estado
     foreach ($v in $g.Estado.VelocidadHardware.Values) { Add-AldiaTarjetaHardwareGui $panel 'Velocidad del disco' $v.Detalle }
 }
 

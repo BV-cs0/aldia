@@ -1,7 +1,12 @@
 ﻿@{
     RootModule = 'Aldia.psm1'
     ModuleVersion = '1.0.0'
+    GUID = '59e4183e-dddd-4eaf-a884-131ca352d3f8'
+    Author = 'Bryan Valenzuela'
+    Copyright = '(c) 2026 Bryan Valenzuela'
+    Description = 'Al Día mantiene Windows al día: actualiza programas (winget, Microsoft Store, npm), Windows Update y drivers, avisa de programas con fallos de seguridad conocidos y revisa la salud del PC (discos, batería, memoria y pantallazos azules). Ventana gráfica en español. Escribe «aldia» para abrirla.'
     PowerShellVersion = '5.1'
+    CompatiblePSEditions = @('Desktop','Core')
     FileList = @(
         'aldia.ps1',
         'Aldia.psd1',
@@ -23,8 +28,11 @@
         'src\GuiCambios.ps1',
         'src\GuiDatos.ps1',
         'src\GuiDiagnostico.ps1',
+        'src\GuiHardware.ps1',
         'src\GuiPortatil.ps1',
         'src\GuiTrabajo.ps1',
+        'src\Hardware.ps1',
+        'src\HardwareSalida.ps1',
         'src\Informe.ps1',
         'src\Notificacion.ps1',
         'src\Npm.ps1',
@@ -34,6 +42,7 @@
         'src\Salud.ps1',
         'src\SoporteWindows.ps1',
         'src\Tarea.ps1',
+        'src\VelocidadDisco.ps1',
         'src\Vulnerabilidades.ps1',
         'src\VulnerabilidadesFuentes.ps1',
         'src\WindowsUpdate.ps1',
@@ -43,8 +52,15 @@
         'datos\cpe.json',
         'datos\windows.json'
     )
-    FunctionsToExport = @('Invoke-AldiaCli')
+    FunctionsToExport = @('Invoke-AldiaCli','Start-Aldia')
     CmdletsToExport = @()
     VariablesToExport = @()
-    AliasesToExport = @()
+    AliasesToExport = @('aldia')
+    PrivateData = @{
+        PSData = @{
+            Tags = @('Windows','Update','Updater','winget','WindowsUpdate','Drivers','Security','CVE','Diagnostics','SMART','BSOD','Spanish','PSEdition_Desktop','PSEdition_Core')
+            ProjectUri = 'https://github.com/BV-cs0/aldia'
+            ReleaseNotes = 'Primera versión publicada: actualizaciones, drivers, avisos de seguridad, salud del PC y pestaña Diagnóstico con la causa de los pantallazos azules.'
+        }
+    }
 }

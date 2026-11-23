@@ -6,13 +6,29 @@ Al Día revisa y actualiza aplicaciones de winget y Microsoft Store, actualizaci
 
 Windows 10 u 11 con Windows PowerShell 5.1. PowerShell 7 también puede ejecutar el CLI. Las aplicaciones requieren winget (App Installer) y la fuente npm requiere npm. Las fuentes que descargan actualizaciones necesitan conexión.
 
-Desde Windows PowerShell como administrador, clona el repositorio con Git. Sustituye RUTA_O_URL_DEL_REPOSITORIO por el origen del proyecto.
+### Desde la PowerShell Gallery (lo más fácil)
+
+Abre Windows PowerShell y escribe:
 
 ~~~powershell
-git clone RUTA_O_URL_DEL_REPOSITORIO
-cd RUTA_DE_LA_COPIA\aldia
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+Install-Module Aldia -Scope CurrentUser
+aldia
+~~~
+
+La primera línea solo hace falta una vez: permite que Windows ejecute módulos de PowerShell. `aldia` abre la ventana; `aldia diagnostico`, `aldia revisar` y el resto de órdenes funcionan igual que `.\aldia.ps1`. Para dejar la tarea automática, ejecuta `aldia instalar` en un PowerShell abierto como administrador.
+
+### Desde GitHub
+
+Desde Windows PowerShell como administrador:
+
+~~~powershell
+git clone https://github.com/BV-cs0/aldia.git
+cd aldia
 .\aldia.ps1 instalar
 ~~~
+
+Sin Git, descarga el ZIP desde GitHub, descomprímelo y haz doble clic en «Abrir Al Día.cmd» o «Instalar Al Día.cmd».
 
 La instalación copia el programa y la configuración a Program Files para que la tarea elevada ejecute archivos modificables por administradores. La tarea se ejecuta con el usuario que la instaló, durante su sesión. Se dispara a la hora configurada, repite cada hora durante doce horas y vuelve a intentarlo quince minutos después de iniciar sesión.
 

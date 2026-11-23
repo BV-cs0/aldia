@@ -63,7 +63,7 @@ function Get-AldiaRevisionInforme {
 }
 
 function Save-AldiaInforme {
-    param($Config, [string]$Ruta, [string]$HistorialRuta, $Datos, [switch]$SoloCache)
+    param($Config, [string]$Ruta, [string]$HistorialRuta, $Datos, [switch]$SoloCache, $Hardware, $Velocidad)
     if (!$Ruta) { $Ruta = Get-AldiaRutaInforme }
     $soloCacheInforme = [bool]$SoloCache
     if (!$Datos) {
@@ -73,7 +73,8 @@ function Save-AldiaInforme {
             Get-AldiaVulnerabilidades $Config -Pendientes @($filas | Where-Object Fuente -eq apps | ForEach-Object Paquete)
         }
         $Datos = @{
-            Equipo=Get-AldiaDatosEquipoInforme; Filas=$filas; Salud=@(Get-AldiaSalud)
+            Equipo=Get-AldiaDatosEquipoInforme; Filas=$filas; Salud=@(Get-AldiaSalud); Hardware=if ($Hardware) { $Hardware } else { Get-AldiaHardware }
+            Velocidad=$Velocidad
             Seguridad=$seguridad; Historial=@(Read-AldiaHistorial $HistorialRuta | Select-Object -Last 10)
             Aviso=if (!$internet) { 'Sin conexión. Solo se pudieron comprobar algunos datos del PC.' }
         }
@@ -97,6 +98,7 @@ function Save-AldiaInforme {
         'Dispositivos con problemas'=@($pnp | ForEach-Object { "$($_.Nombre) · $($_.Motivo)" })
         'Seguridad de los programas'=@($fallos | ForEach-Object { "$($_.Nombre) · $($_.Version) · $($_.Detalle)"; if ($_.Explotado) { '⚠ Ya se está aprovechando este fallo (KEV).' } })
         'Salud del PC'=@($Datos.Salud | ForEach-Object { "$($_.Nombre) · $($_.Estado) · $($_.Detalle)" })
+        Hardware=@(Get-AldiaFilasHardwareInforme $Datos.Hardware $Datos.Velocidad)
         'Últimas ejecuciones'=@($Datos.Historial | Sort-Object Inicio -Descending | Select-Object -First 10 | ForEach-Object {
             $fin = try { ([datetime]$_.Fin).ToString('dd/MM/yyyy HH:mm') } catch { $_.Fin }
             "$fin · $($_.Modo) · código $($_.Codigo)"

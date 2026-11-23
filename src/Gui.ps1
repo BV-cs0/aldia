@@ -2,7 +2,7 @@
     'Demo','Ocupado','BandaReinicio','Reiniciar','Fase','Avisos','Progreso','Titular','IconoTitular',
     'ResumenInstalacion','BandaProteccion','AvisoProteccion','EstadoProteccion','ActivarProteccion','Todas','Ninguna','Seleccionadas','Analizar','Actualizar','Filas','Historial','DetalleHistorial',
     'Fabricantes','Gpu','Inventario','Fijados','Ajustes','Automatica','Hora','FuenteWindows','FuenteDrivers','FuenteApps','FuenteNpm','Guardar',
-    'Seguridad','CuentaEstandar','ResumenSalud','RevisarSalud','TarjetasSalud','BandaWinget','GuardarInforme','EnlaceNvd','ClaveNvd','FuenteOffice','FuenteStore'
+    'Seguridad','CuentaEstandar','ResumenSalud','RevisarSalud','TarjetasSalud','BandaWinget','GuardarInforme','EnlaceNvd','ClaveNvd','FuenteOffice','FuenteStore','PestanaHardware','ResumenHardware','FechaHardware','DetallesHardware','CancelarVelocidad','TarjetasHardware'
 )
 $script:AldiaEstadosGui = @{
     actualizado='Actualizado ✓'; fallo='Falló ✗'; timeout='Falló ✗'; persistente='Falló ✗'
@@ -50,6 +50,9 @@ function Start-AldiaOperacionGui {
                 'analizar' { 'Preparando el análisis…' }
                 'seguridad' { 'Comprobando seguridad…' }
                 'salud' { 'Comprobando salud…' }
+                'hardware' { 'Comprobando el equipo…' }
+                'detallesHardware' { 'Leyendo los detalles del disco…' }
+                'velocidadHardware' { 'Probando la velocidad del disco…' }
                 'informe' { 'Preparando el informe…' }
                 'accionSalud' { 'Aplicando la acción…' }
                 'proteger' { 'Activando la protección del sistema…' }
@@ -90,6 +93,9 @@ function Update-AldiaControlesGui {
     $c.Ajustes.IsEnabled = $libre -and !$g.Ocupado -and $g.ConfigLista
     $c.Fabricantes.IsEnabled = $libre -and !$g.Ocupado
     $c.Inventario.IsEnabled = $c.Fijados.IsEnabled = $c.DetalleHistorial.IsEnabled = $libre -and !$g.Ocupado
+    $c.DetallesHardware.IsEnabled = $c.TarjetasHardware.IsEnabled = $libre -and !$g.Ocupado
+    $c.CancelarVelocidad.Visibility = if ($g.Operacion -eq 'velocidadHardware') { 'Visible' } else { 'Collapsed' }
+    $c.CancelarVelocidad.IsEnabled = $g.Operacion -eq 'velocidadHardware' -and !$g.ControlVelocidad.Cancelar
     $c.RevisarSalud.IsEnabled = $libre
     $c.TarjetasSalud.IsEnabled = $libre -and !$g.Ocupado
     $listaDisponible = $libre -or $g.Operacion -eq 'seguridad'
@@ -395,6 +401,12 @@ function Receive-AldiaEventoGui {
         'filas' { $c.Seguridad.Children.Clear(); Show-AldiaFilasGui $d }
         'seguridadEnCurso' { $g.Operacion = 'seguridad'; Update-AldiaControlesGui }
         'seguridad' { Show-AldiaSeguridadGui $d }
+        'hardware' { Show-AldiaHardwareGui $d }
+        'progresoHardware' {
+            $c.Progreso.IsIndeterminate = $false
+            $c.Progreso.Maximum = 100
+            $c.Progreso.Value = $d
+        }
         'salud' { Show-AldiaSaludGui $d }
         'historial' { Show-AldiaHistorialGui $d }
         'planesDeshacer' { if ($d.Seleccion -eq $g.SeleccionHistorial) { Show-AldiaDetalleHistorialGui $d.Planes } }
@@ -454,6 +466,11 @@ function Update-AldiaVentanaGui {
         Update-AldiaControlesGui
         if ($g.PreguntandoCierre) { return }
         if ($g.CerrarAlTerminar) { $g.Ventana.Close(); return }
+        if ($g.Controles.PestanaHardware.IsSelected -and !$g.HardwareCargado -and !$g.SiguienteOperacion) {
+            $g.HardwareCargado = $true
+            Start-AldiaOperacionGui hardware
+            return
+        }
         if ($g.SiguienteOperacion) {
             $siguiente = $g.SiguienteOperacion
             $g.SiguienteOperacion = $null
@@ -472,6 +489,7 @@ function Connect-AldiaEventosGui {
     $g = $script:AldiaGui
     $c = $g.Controles
     $c.Analizar.Add_Click({ Start-AldiaOperacionGui analizar })
+    Initialize-AldiaHardwareGui
     $c.RevisarSalud.Add_Click({ Start-AldiaOperacionGui salud })
     $c.Todas.Add_Click({ Set-AldiaSeleccionGui $true })
     $c.Ninguna.Add_Click({ Set-AldiaSeleccionGui $false })
@@ -508,6 +526,7 @@ function Connect-AldiaEventosGui {
         $g = $script:AldiaGui
         if ($g.Pendiente) {
             $e.Cancel = $true
+            if ($g.Operacion -eq 'velocidadHardware') { $g.ControlVelocidad.Cancelar = $true }
             $g.SiguienteOperacion = $null
             if ($g.Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger','accionSalud','adoptar','deshacer','desfijar') {
                 $g.PreguntandoCierre = $true

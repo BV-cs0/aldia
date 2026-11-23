@@ -1,4 +1,4 @@
-﻿# Al Día
+# Al Día
 
 Al Día revisa y actualiza aplicaciones de winget y Microsoft Store, actualizaciones de Windows, drivers ofrecidos por Windows Update y paquetes globales de npm. También detecta incidencias de dispositivos y recomienda herramientas oficiales del fabricante. Si Dell Command Update está instalado, puede aplicarle sus actualizaciones. Al Día avisa cuando hay que reiniciar.
 
@@ -88,6 +88,16 @@ office y store de config.fuentes.
 Pulsa **Guardar informe** en Herramientas o ejecuta
 **.\aldia.ps1 informe --ruta "C:\ruta\Informe Al Día.html"**. Si no eliges una ruta, Al Día sugiere
 el Escritorio. El informe se puede abrir sin internet e imprimir desde el navegador.
+
+## Diagnóstico del equipo
+
+Abre **Diagnóstico** o ejecuta **.\aldia.ps1 diagnostico** para revisar los discos, la batería, la
+memoria y los avisos de estabilidad de los últimos 30 días. Windows puede pedir permiso de
+administrador en **Ver detalles** para mostrar la temperatura y el desgaste de los discos.
+
+Para medir la velocidad, pulsa **Probar velocidad** junto a una unidad o ejecuta
+**.\aldia.ps1 diagnostico --velocidad --unidad C**. La prueba necesita 3 GB libres y borra su
+archivo temporal al terminar. En un portátil con poca batería, conecta primero el cargador.
 
 ## Privacidad
 

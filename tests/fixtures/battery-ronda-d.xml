@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <Batteries>
+    <Battery><Id>Serial privado</Id><DesignCapacity>50.000</DesignCapacity><FullChargeCapacity>36,000</FullChargeCapacity><CycleCount>301</CycleCount><Chemistry>LION</Chemistry></Battery>
+    <Battery><DesignCapacity>0</DesignCapacity><FullChargeCapacity>12000</FullChargeCapacity><CycleCount/></Battery>
+    <Battery><DesignCapacity/><FullChargeCapacity/></Battery>
+  </Batteries>
+</BatteryReport>

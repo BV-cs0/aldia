@@ -236,11 +236,11 @@ function Invoke-AldiaTrabajoGui {
         }
         Send-AldiaEventoGui ocupado (!$Demo -and !$adquirido)
         if ($Operacion -eq 'estado') { return }
-        if (!$Demo -and !$adquirido -and $Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger','accionSalud','adoptar','deshacer','desfijar') {
+        if (!$Demo -and !$adquirido -and $Operacion -in 'instalar','fabricante','guardar','reiniciar','proteger','accionSalud','adoptar','deshacer','desfijar','velocidadHardware') {
             Send-AldiaEventoGui aviso 'Espera a que termine la actualización en curso.'
             return
         }
-        if ($Operacion -in 'analizar','salud' -and $adquirido) {
+        if ($Operacion -in 'analizar','salud','hardware','detallesHardware' -and $adquirido) {
             $mutex.ReleaseMutex()
             $adquirido = $false
         }
@@ -284,9 +284,15 @@ function Invoke-AldiaTrabajoGui {
                         Seguridad=$estado.SeguridadInforme; Historial=@(Read-AldiaHistorial $historialRuta)
                         Aviso=if ($estado.SinInternet) { $script:AldiaSinInternet } }
                 }
-                $ruta = Save-AldiaInforme $config $Datos $historialRuta $datosInforme
+                if ($datosInforme) {
+                    $datosInforme.Hardware = if ($estado.HardwareInforme) { $estado.HardwareInforme }
+                        elseif ($Demo) { Get-AldiaHardwareDemo } else { Get-AldiaHardware }
+                    $datosInforme.Velocidad = $estado.VelocidadHardware.Values
+                }
+                $ruta = Save-AldiaInforme $config $Datos $historialRuta $datosInforme -Hardware $estado.HardwareInforme -Velocidad $estado.VelocidadHardware.Values
                 Send-AldiaEventoGui fase "Informe guardado en $ruta"
             }
+            { $_ -in 'hardware','detallesHardware','velocidadHardware' } { Invoke-AldiaHardwareTrabajoGui $Operacion $Datos $Demo $config $Estado }
             { $_ -in 'salud','accionSalud' } { Invoke-AldiaSaludGui $Operacion $Datos $Demo }
             'proteger' {
                 if ($Demo) { $estado.ProteccionDemo = $true }

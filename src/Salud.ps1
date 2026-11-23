@@ -214,6 +214,10 @@ function Get-AldiaSalud {
     foreach ($id in $script:AldiaSalud.Keys) { Get-AldiaComprobacionSalud $id }
     try { Get-AldiaSoporteWindows } catch {}
     Get-AldiaSaludMicrosoft
+    if (!(Test-AldiaMaquinaVirtual)) {
+        $cache = if (!(Test-AldiaAdmin)) { Get-AldiaCacheHardware }
+        Get-AldiaAlertaDisco (Get-AldiaDiscos $cache)
+    }
 }
 
 function Invoke-AldiaAccionSalud {

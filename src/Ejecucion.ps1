@@ -302,8 +302,8 @@ function Invoke-AldiaCli {
     $pausar = $Argumentos -contains '--pausar' -and !$programado
     try {
         $orden = $Argumentos[0]
-        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui','vulnerabilidades','salud','adoptar','deshacer','fijados','informe') {
-            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config, gui, vulnerabilidades, salud, adoptar, deshacer, fijados e informe.'
+        if ($orden -notin 'revisar','actualizar','drivers','inventario','instalar','desinstalar','historial','config','gui','vulnerabilidades','salud','adoptar','deshacer','fijados','informe','diagnostico') {
+            throw 'Órdenes disponibles: revisar, actualizar, drivers, inventario, instalar, desinstalar, historial, config, gui, vulnerabilidades, salud, adoptar, deshacer, fijados, informe y diagnostico.'
         }
         if ($orden -eq 'gui') { return (Start-AldiaGui $Entrada @($Argumentos | Select-Object -Skip 1)) }
         $solo = @(); $n = 10; $forzar = $false; $todo = $false; $id = $null
@@ -327,6 +327,14 @@ function Invoke-AldiaCli {
                     $id = $Argumentos[$i]
                     if ($id -notmatch '^(?:@[A-Za-z0-9._-]+/)?[A-Za-z0-9][A-Za-z0-9._+-]*$' -or
                         ($orden -eq 'adoptar' -and $id -match '[@/]')) { throw 'Indica un identificador válido.' }
+                }
+                'diagnostico/--guardar' { $guardarHardware = $true }
+                'diagnostico/--velocidad' { $velocidadHardware = $true }
+                'diagnostico/--unidad' {
+                    $i++
+                    $unidadHardware = $Argumentos[$i]
+                    if ($unidadHardware -notmatch '^[A-Z]:?$') { throw 'Indica una letra de unidad, por ejemplo C.' }
+                    $unidadHardware = $unidadHardware.TrimEnd(':').ToUpperInvariant()
                 }
                 'informe/--ruta' {
                     $i++
@@ -380,6 +388,35 @@ function Invoke-AldiaCli {
             return 0
         }
         $config = Get-AldiaConfig $rutaConfig
+        if ($orden -eq 'diagnostico') {
+            if ($unidadHardware -and !$velocidadHardware) { throw 'Usa --unidad junto con --velocidad.' }
+            if ($guardarHardware) {
+                if ($velocidadHardware) { throw 'Usa --guardar por separado.' }
+                Save-AldiaHardware
+                return 0
+            }
+            $hardware = Get-AldiaHardware
+            Show-AldiaHardwareCli $hardware
+            if ($velocidadHardware -and !$hardware.Virtual) {
+                if (!$unidadHardware) { $unidadHardware = $env:SystemDrive.TrimEnd(':') }
+                $mutexHardware = [Threading.Mutex]::new($false,'Global\Aldia')
+                $turno = $false
+                try {
+                    try { $turno = $mutexHardware.WaitOne(0) }
+                    catch [Threading.AbandonedMutexException] { $turno = $true }
+                    if (!$turno) { throw 'Espera a que termine la actualización en curso.' }
+                    $velocidad = Test-AldiaVelocidadDisco $unidadHardware -Config $config -Hardware $hardware
+                    Write-Host $velocidad.Detalle
+                } finally {
+                    if ($turno) { $mutexHardware.ReleaseMutex() }
+                    $mutexHardware.Dispose()
+                }
+            }
+            return 0
+        }
+        if ($orden -eq 'actualizar' -and $programado -and !$simular) {
+            try { Save-AldiaHardware } catch { Write-AldiaLog 'No se pudieron guardar los detalles del disco.' }
+        }
         $fuentes = @($fuentesValidas | Where-Object { $config.fuentes.$_ -and (!$solo.Count -or $_ -in $solo) })
         if ($orden -in 'revisar','actualizar','drivers','informe') { $internetCli = Test-AldiaInternet }
         if ($internetCli -eq $false) {

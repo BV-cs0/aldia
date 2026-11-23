@@ -145,7 +145,7 @@ function Show-AldiaSaludGui {
     $g.Controles.ResumenSalud.Foreground = $colores[$global]
     $panel = $g.Controles.TarjetasSalud
     $panel.Children.Clear()
-    foreach ($id in @($script:AldiaSalud.Keys) + @('versionWindows','gestion','microsoftUpdate')) {
+    foreach ($id in @($script:AldiaSalud.Keys) + @('versionWindows','gestion','microsoftUpdate','discoDanado')) {
         $item = $g.ResultadosSalud[$id]
         if (!$item) { continue }
         $tarjeta = [Windows.Controls.StackPanel]::new()
@@ -167,7 +167,8 @@ function Show-AldiaSaludGui {
         if ($item.Accion) {
             $boton = New-AldiaBotonGui $item.Accion $item {
                 param($sender,$e)
-                Start-AldiaAccionSaludGui $sender.Tag
+                if ($sender.Tag.Id -eq 'discoDanado') { $script:AldiaGui.Controles.PestanaHardware.IsSelected = $true }
+                else { Start-AldiaAccionSaludGui $sender.Tag }
             }
             $boton.HorizontalAlignment = 'Left'
             $null = $tarjeta.Children.Add($boton)

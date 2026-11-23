@@ -126,3 +126,8 @@ catálogos cuando están habilitados.
 El informe se guarda en el archivo que elijas. Incluye modelo y características del PC, pendientes,
 drivers con problemas, estado de seguridad y últimas diez ejecuciones. Omite nombres de usuario y
 equipo, números de serie, direcciones IP y MAC, claves de producto y clave de NVD.
+
+## Licencia
+
+Al Día tiene licencia [MIT](LICENSE): puedes usarlo, copiarlo, cambiarlo y compartirlo libremente,
+también en otros proyectos, siempre que conserves el aviso de copyright y la licencia.

@@ -1,6 +1,6 @@
 ﻿@{
     RootModule = 'Aldia.psm1'
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.0.1'
     GUID = '59e4183e-dddd-4eaf-a884-131ca352d3f8'
     Author = 'Bryan Valenzuela'
     Copyright = '(c) 2026 Bryan Valenzuela'
@@ -13,6 +13,7 @@
         'Aldia.psm1',
         'config.default.json',
         'README.md',
+        'LICENSE',
         'Abrir Al Día.cmd',
         'Instalar Al Día.cmd',
         'src\Adopcion.ps1',
@@ -60,7 +61,8 @@
         PSData = @{
             Tags = @('Windows','Update','Updater','winget','WindowsUpdate','Drivers','Security','CVE','Diagnostics','SMART','BSOD','Spanish','PSEdition_Desktop','PSEdition_Core')
             ProjectUri = 'https://github.com/BV-cs0/aldia'
-            ReleaseNotes = 'Primera versión publicada: actualizaciones, drivers, avisos de seguridad, salud del PC y pestaña Diagnóstico con la causa de los pantallazos azules.'
+            LicenseUri = 'https://github.com/BV-cs0/aldia/blob/main/LICENSE'
+            ReleaseNotes = '1.0.1: Al Día pasa a tener licencia MIT. 1.0.0: primera versión publicada (actualizaciones, drivers, avisos de seguridad, salud del PC y pestaña Diagnóstico con la causa de los pantallazos azules).'
         }
     }
 }

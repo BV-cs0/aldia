@@ -429,7 +429,11 @@ function Invoke-AldiaCli {
             if ($estadoWinget.Estado -ne 'ok' -and !$programado) { Write-Host $estadoWinget.Mensaje -ForegroundColor Yellow }
         }
         switch ($orden) {
-            'actualizar' { return (Invoke-AldiaActualizacion $config $fuentes $historialRuta -Simular:$simular -Forzar:$forzar -Parcial:($solo.Count -gt 0)) }
+            'actualizar' {
+                $codigo = Invoke-AldiaActualizacion $config $fuentes $historialRuta -Simular:$simular -Forzar:$forzar -Parcial:($solo.Count -gt 0)
+                if ($programado -and !$simular) { Update-AldiaInstalado (Split-Path $Entrada) }
+                return $codigo
+            }
             'revisar' { return (Invoke-AldiaRevision $config $fuentes) }
             'drivers' { Show-AldiaDrivers $config }
             'vulnerabilidades' { Show-AldiaVulnerabilidadesCli $config }

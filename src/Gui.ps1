@@ -27,7 +27,10 @@ function Start-AldiaGui {
         $r = Invoke-AldiaComando $ps (@('-NoProfile','-STA','-ExecutionPolicy','Bypass','-File',$Entrada,'gui') + $Opciones) -Oculto -Elevar:$elevar
         return $r.Codigo
     }
-    Show-AldiaGui -Demo:$demo
+    $carpeta = Split-Path $Entrada
+    if (!$demo) { $fondo = Start-AldiaActualizacionPortatil $carpeta }
+    try { Show-AldiaGui -Demo:$demo }
+    finally { if ($fondo) { Complete-AldiaActualizacionPortatil $carpeta } }
     return 0
 }
 
@@ -577,6 +580,8 @@ function Close-AldiaGui {
 function Show-AldiaGui {
     param([switch]$Demo)
     Initialize-AldiaGui -Demo:$Demo
+    $version = Get-AldiaVersionLocal
+    if ($version) { $script:AldiaGui.Ventana.Title = "Al Día $version" }
     $timer = [Windows.Threading.DispatcherTimer]::new()
     $timer.Interval = [timespan]::FromMilliseconds(120)
     try {

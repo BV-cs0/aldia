@@ -17,6 +17,7 @@ function Start-Aldia {
         if ($a -is [array]) { $a -join ',' } else { [string]$a }
     })
     if (!$argumentos.Count) { $argumentos = @('gui') }
+    Show-AldiaAvisoVersion $PSScriptRoot
     $entrada = Join-Path $PSScriptRoot 'aldia.ps1'
     # Devolver el código como lo haría un programa, sin escribirlo en pantalla ni cerrar la consola.
     $global:LASTEXITCODE = [int](@(Invoke-AldiaCli -Argumentos $argumentos -Entrada $entrada) | Select-Object -Last 1)

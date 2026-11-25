@@ -1,0 +1,36 @@
+name: Publicar versión
+
+# Al subir una etiqueta vX.Y.Z se crea la Release de GitHub con el paquete y su SHA-256.
+# De ahí la descargan, la verifican y la aplican solas las copias instaladas y las portátiles.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Comprobar que la etiqueta coincide con la versión
+        shell: powershell
+        run: |
+          $version = (Import-PowerShellDataFile .\Aldia.psd1).ModuleVersion
+          if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "La etiqueta $env:GITHUB_REF_NAME no coincide con ModuleVersion $version" }
+
+      - name: Crear el paquete
+        shell: powershell
+        run: .\publicar\Crear-Paquete.ps1 -Salida paquete
+
+      - name: Crear la Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notas = (Import-PowerShellDataFile .\Aldia.psd1).PrivateData.PSData.ReleaseNotes
+          [IO.File]::WriteAllText("$env:RUNNER_TEMP\notas.md", $notas, [Text.UTF8Encoding]::new($false))
+          gh release create $env:GITHUB_REF_NAME (Get-ChildItem paquete).FullName --title "Al Día $($env:GITHUB_REF_NAME.TrimStart('v'))" --notes-file "$env:RUNNER_TEMP\notas.md"
+          if ($LASTEXITCODE) { throw 'No se pudo crear la Release.' }

@@ -66,6 +66,21 @@ La tarea comprueba las vulnerabilidades después de actualizar y añade los caso
 
 Los logs están en %ProgramData%\Aldia\logs y el historial en %ProgramData%\Aldia\historial.jsonl. Cada actualización de winget tiene además su propio log.
 
+## Actualizaciones de Al Día
+
+Al Día se mantiene al día a sí mismo, sin ventanas ni preguntas. Lo que hace depende de cómo lo tengas:
+
+| Cómo lo tienes | Qué hace |
+| --- | --- |
+| Instalado (`instalar`, en Program Files) | Después de cada ejecución programada mira la última [Release](https://github.com/BV-cs0/aldia/releases), descarga el paquete, comprueba su SHA-256 y lo aplica. La versión nueva se usa en la siguiente ejecución. Queda anotado en el log. |
+| Carpeta suelta o USB («Abrir Al Día.cmd») | Mientras la ventana está abierta descarga y verifica la versión nueva en segundo plano; al cerrarla la aplica en la misma carpeta. Tu config.json no se toca. |
+| PowerShell Gallery (`Install-Module`) | No se reinstala solo: avisa una vez, en una línea, de que hay versión nueva y de que se actualiza con `Update-Module Aldia`. Para no ver el aviso, define la variable de entorno `ALDIA_SIN_AVISO_VERSION=1`. |
+| Clon con Git | Nada: se actualiza con `git pull`. |
+
+Solo se descarga de `github.com/BV-cs0/aldia` por HTTPS, y un paquete cuyo SHA-256 no coincide con el publicado se descarta. Si no hay conexión o GitHub no responde, Al Día funciona igual. La versión que tienes aparece en el título de la ventana y los cambios de cada versión están en las Releases y en ReleaseNotes de Aldia.psd1.
+
+Para publicar una versión: sube ModuleVersion y ReleaseNotes en Aldia.psd1 y crea la etiqueta `vX.Y.Z`. El flujo de GitHub crea la Release con Aldia-X.Y.Z.zip y su .sha256 (los genera `publicar\Crear-Paquete.ps1`, solo con los archivos de FileList).
+
 ## Pruebas
 
 En Windows PowerShell 5.1 con Pester 3.4 disponible, ejecuta Invoke-Pester .\tests desde la carpeta del proyecto.
@@ -120,7 +135,8 @@ archivo temporal al terminar. En un portátil con poca batería, conecta primero
 Para revisar fallos de seguridad, Al Día consulta NVD y OSV con nombres o identificadores de
 programas y sus versiones. Envía a EPSS los identificadores de fallos (CVE) y descarga la lista de
 fallos aprovechados activamente de CISA. La clave opcional de NVD solo se envía a NVD. Al Día no
-pide cuentas ni envía telemetría. Windows Update, winget, npm y Microsoft Store consultan sus propios
+pide cuentas ni envía telemetría. Para sus propias actualizaciones solo consulta las Releases de
+GitHub o, si lo instalaste desde allí, la PowerShell Gallery. Windows Update, winget, npm y Microsoft Store consultan sus propios
 catálogos cuando están habilitados.
 
 El informe se guarda en el archivo que elijas. Incluye modelo y características del PC, pendientes,

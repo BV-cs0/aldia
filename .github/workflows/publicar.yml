@@ -16,17 +16,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Comprobar que la etiqueta coincide con la versión
-        shell: powershell
+        shell: pwsh
         run: |
           $version = (Import-PowerShellDataFile .\Aldia.psd1).ModuleVersion
           if ("v$version" -ne $env:GITHUB_REF_NAME) { throw "La etiqueta $env:GITHUB_REF_NAME no coincide con ModuleVersion $version" }
 
       - name: Crear el paquete
-        shell: powershell
+        shell: pwsh
         run: .\publicar\Crear-Paquete.ps1 -Salida paquete
 
+      # pwsh (PowerShell 7), no powershell (5.1): 5.1 manda los argumentos a gh con la
+      # codepage del sistema, no UTF-8, y el título salía mal («Al DÃ­a» en vez de «Al Día»).
       - name: Crear la Release
-        shell: powershell
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

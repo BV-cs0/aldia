@@ -2,6 +2,7 @@
 
 [![PowerShell Gallery](https://img.shields.io/powershellgallery/v/Aldia)](https://www.powershellgallery.com/packages/Aldia)
 [![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-green)](LICENSE)
+[![Pruebas](https://github.com/BV-cs0/aldia/actions/workflows/pruebas.yml/badge.svg)](https://github.com/BV-cs0/aldia/actions/workflows/pruebas.yml)
 
 Al Día mantiene Windows al día desde una sola ventana en español:
 
